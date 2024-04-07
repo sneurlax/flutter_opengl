@@ -183,6 +183,11 @@ std::string Shader::initShader() {
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
 
     glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, self->texture_name, 0);
+
+    GLenum fboStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
+    if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
+        LOGD(LOG_TAG_SHADER, "FBO incomplete! Status: 0x%X", fboStatus);
+    }
 #endif
 
     uniformsList.setAllSampler2D();
@@ -228,48 +233,51 @@ std::string Shader::initShaderToy() {
     vertexSource =
 #ifdef _IS_ANDROID_
 //            "#version 300 es\n"
-#elif defined _IS_LINUX_ || defined _IS_WIN_
-            "#version 330 core\n"
-#endif
             "precision highp float;\n"
             "precision mediump int;\n"
-            "attribute vec4 a_Position;        \n" // Per-vertex position information we will pass in.
-
-            "void main()                       \n" // The entry point for our vertex shader.
+            "attribute vec4 a_Position;        \n"
+#elif defined _IS_LINUX_ || defined _IS_WIN_
+            "#version 330 core\n"
+            "in vec4 a_Position;               \n"
+#endif
+            "void main()                       \n"
             "{                                 \n"
             "   gl_Position = a_Position;      \n"
             "}                                 \n";
 
-    std::string common = "precision highp float;         \n"
-                        // "layout(binding=0) uniform sampler2D iChannel0; \n"
-                        // "layout(binding=1) uniform sampler2D iChannel1; \n"
-                        // "layout(binding=2) uniform sampler2D iChannel2; \n"
-                        // "layout(binding=3) uniform sampler2D iChannel3; \n"
+    std::string common =
+#ifdef _IS_ANDROID_
+                         "precision highp float;         \n"
+#endif
                          "uniform sampler2D iChannel0;   \n"
                          "uniform sampler2D iChannel1;   \n"
                          "uniform sampler2D iChannel2;   \n"
                          "uniform sampler2D iChannel3;   \n"
-                         "uniform vec4      iMouse;      \n"  // mouse position (in pixels)
-                         "uniform vec3      iResolution; \n"  // viewport resolution (in pixels)
-                         "uniform float     iTime;       \n"; // shader playback time (in seconds)
+                         "uniform vec4      iMouse;      \n"
+                         "uniform vec3      iResolution; \n"
+                         "uniform float     iTime;       \n";
 
+#if defined _IS_LINUX_ || defined _IS_WIN_
+    // In GLSL 330 core, gl_FragColor doesn't exist; declare an output variable
+    std::string fragOutputDecl = "out vec4 fragColor;\n";
     std::string main = "\nvoid main() {\n"
-                       #ifdef _IS_ANDROID_
-                       "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
-                       #endif
-                       #if defined _IS_LINUX_ || defined _IS_WIN_
-                       // The FBO is vertical flipped. It has top-left origin, but OpenGL has bottom-left
-                       // So do a flip in vertical axis when using framebuffer
-                       "    mainImage(gl_FragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n"
-                       #endif
+                       "    mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n"
                        "}\n";
+#else
+    std::string fragOutputDecl = "";
+    std::string main = "\nvoid main() {\n"
+                       "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
+                       "}\n";
+#endif
 
     fragmentSource =
 #if defined _IS_LINUX_ || defined _IS_WIN_
     "#version 330 core\n"
+    "#extension GL_OES_standard_derivatives : enable\n" +
+    fragOutputDecl +
+#else
+    "#extension GL_OES_standard_derivatives : enable\n" +
 #endif
-    //"#version 300 es\n"
-    "#extension GL_OES_standard_derivatives : enable         \n" + // needed by fwidth
     common +
     fragmentSource +
     main;
@@ -361,14 +369,25 @@ void Shader::drawFrame() {
     wglMakeCurrent(self->hdc, self->hrc);
 #endif
 
+    GLfloat time = (GLfloat) clock() / (GLfloat) CLOCKS_PER_SEC - startTime;
+
+#ifdef _IS_LINUX_
+    // Bind FBO FIRST, before any drawing operations
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+    glViewport(0, 0, width, height);
+#endif
+
     glClear(GL_COLOR_BUFFER_BIT);
 
-    GLfloat time = (GLfloat) clock() / (GLfloat) CLOCKS_PER_SEC - startTime;
     use();
 
     uniformsList.setUniformValue("iTime", (void *) (&time));
     uniformsList.sendAllUniforms();
 
+    // Rebind FBO texture as color attachment (sampler binding may have disturbed it)
+#ifdef _IS_LINUX_
+    glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+#endif
 
 #ifdef _IS_ANDROID_
     glDrawArrays(GL_TRIANGLES, 0, 6);
@@ -380,10 +399,14 @@ void Shader::drawFrame() {
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
-    
-    // glBindTexture(GL_TEXTURE_2D, NULL);
-    // glFlush();
-    // glFinish();
+
+    // Read pixels from FBO into CPU buffer (FlPixelBufferTexture approach)
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+                 (void*)(self->myTexture->buffer));
+
+    glFlush();
+    glFinish();
 
     fl_texture_registrar_mark_texture_frame_available(self->texture_registrar,
                                                       self->texture);
