@@ -1,6 +1,6 @@
 # flutter_opengl
 
-A Flutter OpenGL ES plugin using a Texture() widget. Supports Android, Linux and Windows. Many shaders from ShaderToy.com can be copy/pasted 
+A Flutter OpenGL ES plugin using a Texture() widget. Supports Android, Linux and Windows. Many shaders from ShaderToy.com can be copy/pasted
 
 ## Getting Started
 
@@ -93,7 +93,35 @@ Once the renderer is started all the below methods can be used via *OpenGLContro
 # Setup
 
 ## Linux
-Be sure you have **glew**, **glm** and **OpenCV** packages installed.
+
+Install the required development libraries:
+
+```bash
+sudo apt-get install -y libglew-dev libglm-dev libgtk-3-dev libegl-dev
+```
+
+OpenCV is optional. To build with OpenCV support (for video capture features), also install:
+
+```bash
+sudo apt-get install -y libopencv-dev
+```
+
+Then build with the OpenCV CMake flag:
+```bash
+flutter build linux --dart-define=WITH_OPENCV=true
+```
+
+**Note:** The plugin includes a bundled copy of GLM headers, so `libglm-dev` is optional if you prefer not to install it system-wide.
+
+### Running with Impeller (preview)
+
+Flutter on Linux uses the Skia renderer by default. Impeller is available as a preview:
+
+```bash
+flutter run -d linux --enable-impeller
+```
+
+The plugin uses `FlTextureGL` for zero-copy GPU texture sharing, which works with both Skia and Impeller backends.
 
 
 ## Windows
@@ -118,10 +146,10 @@ extract the zip and rename its main directory to "glew"
 https://github.com/opencv/opencv/releases/download/4.7.0/opencv-4.7.0-windows.exe
 
 ## Android
-Run the script *SCRIPT/setupOpenCV-android.sh* or manually download OpenCV from here https://github.com/opencv/opencv/releases/download/4.7.0/opencv-4.7.0-android-sdk.zip locate libs and include folders and copy them into android/src/opencv. 
+Run the script *SCRIPT/setupOpenCV-android.sh* or manually download OpenCV from here https://github.com/opencv/opencv/releases/download/4.7.0/opencv-4.7.0-android-sdk.zip locate libs and include folders and copy them into android/src/opencv.
 
 # TODO
-- better docomentation
+- better documentation
 - the c/c++ code is not "state of the art" written! PRs are welcomed
 - iOS, Mac and Web support
 - ES 3 on Android (now supports 2)
