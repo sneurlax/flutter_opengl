@@ -7,6 +7,7 @@
 
 #define LOG_TAG_SHADER "NATIVE SHADER"
 
+#ifndef _IS_MACOS_
 // Query eglGetError and eventully print it with the [note]
 void eglPrintError(const std::string &note) {
     EGLint error = eglGetError();
@@ -66,6 +67,7 @@ void eglPrintError(const std::string &note) {
         LOGD(LOG_TAG_SHADER, "%s  error: %d  0x%X  %s", note.c_str(), error, error, ret.c_str());
     }
 }
+#endif // !_IS_MACOS_
 
 void replaceAll(std::string& src, const std::string& search,
                           const std::string& replace) {
@@ -135,6 +137,8 @@ std::string Shader::initShader() {
 
 #ifdef _IS_LINUX_
     gdk_gl_context_make_current(self->context);
+#elif _IS_MACOS_
+    CGLSetCurrentContext(self->cglContext);
 #elif _IS_WIN_
     wglMakeCurrent(self->hdc, self->hrc);
 #endif
@@ -153,8 +157,8 @@ std::string Shader::initShader() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, shaderVertices);
     glEnableVertexAttribArray(0);
 #endif
-#if defined _IS_LINUX_ || defined _IS_WIN_
-    // use FrameBuffer on Linux
+#if defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_
+    // use FrameBuffer on Linux/macOS/Windows
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
@@ -194,9 +198,11 @@ std::string Shader::initShader() {
 
 #ifdef _IS_LINUX_
     gdk_gl_context_clear_current();
+#elif _IS_MACOS_
+    CGLSetCurrentContext(NULL);
 #elif _IS_WIN_
     // pixelBuffer = make_unique<uint8_t[]>(width * height * 4);
-    
+
     // if (buffer == nullptr) {
     //     LOGD(LOG_TAG_SHADER, "Can't allocate buffer memory!");
     //     if (programObject != 0)
@@ -236,7 +242,7 @@ std::string Shader::initShaderToy() {
             "precision highp float;\n"
             "precision mediump int;\n"
             "attribute vec4 a_Position;        \n"
-#elif defined _IS_LINUX_ || defined _IS_WIN_
+#elif defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_
             "#version 330 core\n"
             "in vec4 a_Position;               \n"
 #endif
@@ -257,7 +263,7 @@ std::string Shader::initShaderToy() {
                          "uniform vec3      iResolution; \n"
                          "uniform float     iTime;       \n";
 
-#if defined _IS_LINUX_ || defined _IS_WIN_
+#if defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_
     // In GLSL 330 core, gl_FragColor doesn't exist; declare an output variable
     std::string fragOutputDecl = "out vec4 fragColor;\n";
     std::string main = "\nvoid main() {\n"
@@ -271,7 +277,7 @@ std::string Shader::initShaderToy() {
 #endif
 
     fragmentSource =
-#if defined _IS_LINUX_ || defined _IS_WIN_
+#if defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_
     "#version 330 core\n"
     "#extension GL_OES_standard_derivatives : enable\n" +
     fragOutputDecl +
@@ -365,13 +371,15 @@ void Shader::drawFrame() {
 
 #ifdef _IS_LINUX_
     gdk_gl_context_make_current(self->context);
+#elif _IS_MACOS_
+    CGLSetCurrentContext(self->cglContext);
 #elif _IS_WIN_
     wglMakeCurrent(self->hdc, self->hrc);
 #endif
 
     GLfloat time = (GLfloat) clock() / (GLfloat) CLOCKS_PER_SEC - startTime;
 
-#ifdef _IS_LINUX_
+#if defined _IS_LINUX_ || defined _IS_MACOS_
     // Bind FBO FIRST, before any drawing operations
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     glViewport(0, 0, width, height);
@@ -385,7 +393,7 @@ void Shader::drawFrame() {
     uniformsList.sendAllUniforms();
 
     // Rebind FBO texture as color attachment (sampler binding may have disturbed it)
-#ifdef _IS_LINUX_
+#if defined _IS_LINUX_ || defined _IS_MACOS_
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 #endif
 
@@ -411,6 +419,21 @@ void Shader::drawFrame() {
     fl_texture_registrar_mark_texture_frame_available(self->texture_registrar,
                                                       self->texture);
     gdk_gl_context_clear_current();
+#elif _IS_MACOS_
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    // Read pixels from FBO into CPU buffer
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+                 macosGetTextureBuffer(self));
+
+    glFlush();
+    glFinish();
+
+    CGLSetCurrentContext(NULL);
+    macosMarkTextureFrameAvailable(self);
 #elif _IS_WIN_
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);

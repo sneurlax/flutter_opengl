@@ -10,6 +10,11 @@
 #elif __linux__
     #define _IS_LINUX_ 1
     // WITH_OPENCV is optionally defined via CMake
+#elif __APPLE__
+    #include <TargetConditionals.h>
+    #if TARGET_OS_MAC && !TARGET_OS_IPHONE
+        #define _IS_MACOS_ 1
+    #endif
 #elif _WIN32 | _WIN64
     #define _IS_WIN_ 1
     #ifndef WITH_OPENCV
@@ -102,6 +107,34 @@ typedef struct flutter_opengl_plugin_context
     int height;
 } OpenglPluginContext;
 static OpenglPluginContext ctx_f = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+#elif _IS_MACOS_
+#include <OpenGL/gl3.h>
+#include <OpenGL/OpenGL.h>
+#include <iostream>
+#define LOGD(TAG,...) printf(TAG),printf(" "),printf(__VA_ARGS__),printf("\n");fflush(stdout);
+#include "../macos/Classes/macos_bridge.h"
+
+#define FFI_PLUGIN_EXPORT __attribute__((visibility("default"))) __attribute__((used))
+
+typedef struct flutter_opengl_plugin_context
+{
+    CGLContextObj cglContext;
+    unsigned int texture_name;
+    void *textureRegistry;   // NSObject<FlutterTextureRegistry>* (bridged)
+    void *myTexture;         // FlutterOpenglTexture* (bridged)
+    int64_t flutterTextureId;
+    int width;
+    int height;
+} OpenglPluginContext;
+static OpenglPluginContext ctx_f = {
+        nullptr,
+        0,
+        nullptr,
+        nullptr,
+        0,
+        0,
+        0};
 
 #endif
 

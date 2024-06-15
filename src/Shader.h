@@ -7,7 +7,12 @@
 #include <iostream>
 #include <mutex>
 #include <memory>
+#ifndef _IS_MACOS_
 #include <EGL/egl.h>
+#else
+// macOS doesn't have EGL; EGLint is used for width/height fields
+typedef int32_t EGLint;
+#endif
 
 #ifdef _IS_ANDROID_
 #define EGL_EGLEXT_PROTOTYPES
@@ -35,9 +40,16 @@
 #include <GLES3/gl3.h>
 #include <glm/glm.hpp>
 #endif
+#ifdef _IS_MACOS_
+#include <OpenGL/gl3.h>
+#include <OpenGL/OpenGL.h>
+#include <glm/glm.hpp>
+#endif
 
 
+#ifndef _IS_MACOS_
 extern "C" void eglPrintError(const std::string &note);
+#endif
 extern "C" void replaceAll(std::string& src, const std::string& search,
                           const std::string& replace);
 
