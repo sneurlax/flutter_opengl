@@ -17,9 +17,6 @@
     #endif
 #elif _WIN32 | _WIN64
     #define _IS_WIN_ 1
-    #ifndef WITH_OPENCV
-        #define WITH_OPENCV
-    #endif
 #endif
 
 #ifdef _IS_ANDROID_
@@ -89,7 +86,6 @@ static OpenglPluginContext ctx_f = {
 #elif _IS_WIN_
 #include <flutter/plugin_registrar_windows.h>
 #include "../windows/fl_my_texture_gl.h"
-#include <EGL/egl.h>
 #define LOGD(TAG,...) printf(TAG),printf(" "),printf(__VA_ARGS__),printf("\n");fflush(stdout);
 #define FFI_PLUGIN_EXPORT __declspec(dllexport)
 

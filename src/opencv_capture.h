@@ -5,6 +5,9 @@
 
 #include <vector>
 #include <atomic>
+
+#ifdef WITH_OPENCV
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/video/video.hpp>
@@ -42,5 +45,7 @@ private:
     double fps;
     double frameDuration;
 };
+
+#endif // WITH_OPENCV
 
 #endif //OPENCV_CAPTURE_H

@@ -31,8 +31,6 @@
 #include <glm/glm.hpp>
 #endif
 #ifdef _IS_WIN_
-#include <EGL/egl.h>
-#include <GLES3/gl3.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #endif

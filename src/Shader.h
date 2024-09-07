@@ -7,9 +7,11 @@
 #include <iostream>
 #include <mutex>
 #include <memory>
-#ifndef _IS_MACOS_
+#if defined(_IS_LINUX_) || defined(_IS_ANDROID_)
 #include <EGL/egl.h>
-#else
+#elif defined(_IS_WIN_)
+typedef int32_t EGLint;
+#elif defined(_IS_MACOS_)
 // macOS doesn't have EGL; EGLint is used for width/height fields
 typedef int32_t EGLint;
 #endif
@@ -37,7 +39,6 @@ typedef int32_t EGLint;
 #ifdef _IS_WIN_
 #include "../windows/flutter_opengl_plugin.h"
 #include <GL/glew.h>
-#include <GLES3/gl3.h>
 #include <glm/glm.hpp>
 #endif
 #ifdef _IS_MACOS_
@@ -47,7 +48,7 @@ typedef int32_t EGLint;
 #endif
 
 
-#ifndef _IS_MACOS_
+#if defined(_IS_LINUX_) || defined(_IS_ANDROID_) || defined(_IS_WIN_)
 extern "C" void eglPrintError(const std::string &note);
 #endif
 extern "C" void replaceAll(std::string& src, const std::string& search,

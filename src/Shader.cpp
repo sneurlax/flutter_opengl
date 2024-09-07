@@ -7,7 +7,7 @@
 
 #define LOG_TAG_SHADER "NATIVE SHADER"
 
-#ifndef _IS_MACOS_
+#if defined(_IS_LINUX_) || defined(_IS_ANDROID_)
 // Query eglGetError and eventully print it with the [note]
 void eglPrintError(const std::string &note) {
     EGLint error = eglGetError();
@@ -62,6 +62,36 @@ void eglPrintError(const std::string &note) {
             ret = "Unknown error";
     }
     if (error == EGL_SUCCESS) {
+        LOGD(LOG_TAG_SHADER, "%s  %s", note.c_str(), ret.c_str());
+    } else {
+        LOGD(LOG_TAG_SHADER, "%s  error: %d  0x%X  %s", note.c_str(), error, error, ret.c_str());
+    }
+}
+#elif defined(_IS_WIN_)
+// On Windows, use glGetError instead of eglGetError
+void eglPrintError(const std::string &note) {
+    GLenum error = glGetError();
+    std::string ret;
+    switch (error) {
+        case GL_NO_ERROR:
+            ret = "No error";
+            break;
+        case GL_INVALID_ENUM:
+            ret = "Invalid enum";
+            break;
+        case GL_INVALID_VALUE:
+            ret = "Invalid value";
+            break;
+        case GL_INVALID_OPERATION:
+            ret = "Invalid operation";
+            break;
+        case GL_OUT_OF_MEMORY:
+            ret = "Out of memory";
+            break;
+        default:
+            ret = "Unknown error";
+    }
+    if (error == GL_NO_ERROR) {
         LOGD(LOG_TAG_SHADER, "%s  %s", note.c_str(), ret.c_str());
     } else {
         LOGD(LOG_TAG_SHADER, "%s  error: %d  0x%X  %s", note.c_str(), error, error, ret.c_str());

@@ -57,6 +57,9 @@
 
 #include "opencv_capture.h"
 #include "common.h"
+
+#ifdef WITH_OPENCV
+
 #include "ffi.h"
 #include "Renderer.h"
 
@@ -241,3 +244,5 @@ cv::Mat OpenCVCapture::getCurrentMatFrame()
 		return cv::Mat();
 	return frame;
 }
+
+#endif // WITH_OPENCV
