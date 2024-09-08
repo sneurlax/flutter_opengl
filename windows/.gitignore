@@ -10,6 +10,10 @@ flutter/
 x64/
 x86/
 
+# Allow bundled GLEW x64 binaries
+!glew/bin/Release/x64/
+!glew/lib/Release/x64/
+
 # Visual Studio cache files
 # files ending in .cache can be ignored
 *.[Cc]ache

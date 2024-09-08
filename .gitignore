@@ -35,7 +35,6 @@ BUILD_LIBS/
 SCRIPTS/
 !SCRIPTS/setupOpenCV-android.sh
 
-#libraries to download
+#libraries to download (no longer needed for Windows; GLM is in src/glm, GLEW is bundled)
 windows/glm/
 windows/Native_SDK/
-windows/glew
