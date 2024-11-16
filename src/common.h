@@ -4,9 +4,6 @@
 // On Android, also __linux__ is defined. So make my own
 #ifdef __ANDROID__
     #define _IS_ANDROID_ 1
-    #ifndef WITH_OPENCV
-        #define WITH_OPENCV
-    #endif
 #elif __linux__
     #define _IS_LINUX_ 1
     // WITH_OPENCV is optionally defined via CMake
