@@ -11,6 +11,8 @@
     #include <TargetConditionals.h>
     #if TARGET_OS_MAC && !TARGET_OS_IPHONE
         #define _IS_MACOS_ 1
+    #elif TARGET_OS_IPHONE
+        #define _IS_IOS_ 1
     #endif
 #elif _WIN32 | _WIN64
     #define _IS_WIN_ 1
@@ -113,6 +115,33 @@ static OpenglPluginContext ctx_f = {0, 0, 0, 0, 0, 0, 0, 0, 0};
 typedef struct flutter_opengl_plugin_context
 {
     CGLContextObj cglContext;
+    unsigned int texture_name;
+    void *textureRegistry;   // NSObject<FlutterTextureRegistry>* (bridged)
+    void *myTexture;         // FlutterOpenglTexture* (bridged)
+    int64_t flutterTextureId;
+    int width;
+    int height;
+} OpenglPluginContext;
+static OpenglPluginContext ctx_f = {
+        nullptr,
+        0,
+        nullptr,
+        nullptr,
+        0,
+        0,
+        0};
+
+#elif _IS_IOS_
+#include <OpenGLES/ES3/gl.h>
+#include <iostream>
+#define LOGD(TAG,...) printf(TAG),printf(" "),printf(__VA_ARGS__),printf("\n");fflush(stdout);
+#include "../ios/Classes/ios_bridge.h"
+
+#define FFI_PLUGIN_EXPORT __attribute__((visibility("default"))) __attribute__((used))
+
+typedef struct flutter_opengl_plugin_context
+{
+    void *eaglContext;        // EAGLContext* (bridged)
     unsigned int texture_name;
     void *textureRegistry;   // NSObject<FlutterTextureRegistry>* (bridged)
     void *myTexture;         // FlutterOpenglTexture* (bridged)

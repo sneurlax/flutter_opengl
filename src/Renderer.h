@@ -23,6 +23,10 @@
     #ifdef WITH_OPENCV
         #include "opencv_capture.h"
     #endif
+#elif _IS_IOS_
+    #ifdef WITH_OPENCV
+        #include "opencv_capture.h"
+    #endif
 #elif _IS_WIN_
     #include "../windows/flutter_opengl_plugin.h"
     #ifdef WITH_OPENCV

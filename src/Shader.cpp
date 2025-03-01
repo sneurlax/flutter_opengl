@@ -67,8 +67,8 @@ void eglPrintError(const std::string &note) {
         LOGD(LOG_TAG_SHADER, "%s  error: %d  0x%X  %s", note.c_str(), error, error, ret.c_str());
     }
 }
-#elif defined(_IS_WIN_)
-// On Windows, use glGetError instead of eglGetError
+#elif defined(_IS_WIN_) || defined(_IS_IOS_)
+// On Windows/iOS, use glGetError instead of eglGetError
 void eglPrintError(const std::string &note) {
     GLenum error = glGetError();
     std::string ret;
@@ -97,7 +97,7 @@ void eglPrintError(const std::string &note) {
         LOGD(LOG_TAG_SHADER, "%s  error: %d  0x%X  %s", note.c_str(), error, error, ret.c_str());
     }
 }
-#endif // !_IS_MACOS_
+#endif // eglPrintError
 
 void replaceAll(std::string& src, const std::string& search,
                           const std::string& replace) {
@@ -169,6 +169,8 @@ std::string Shader::initShader() {
     gdk_gl_context_make_current(self->context);
 #elif _IS_MACOS_
     CGLSetCurrentContext(self->cglContext);
+#elif _IS_IOS_
+    iosMakeContextCurrent(self);
 #elif _IS_WIN_
     wglMakeCurrent(self->hdc, self->hrc);
 #endif
@@ -187,8 +189,8 @@ std::string Shader::initShader() {
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, shaderVertices);
     glEnableVertexAttribArray(0);
 #endif
-#if defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_
-    // use FrameBuffer on Linux/macOS/Windows
+#if defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_ || defined _IS_IOS_
+    // use FrameBuffer on Linux/macOS/Windows/iOS
     glGenVertexArrays(1, &VAO);
     glGenBuffers(1, &VBO);
 
@@ -216,7 +218,11 @@ std::string Shader::initShader() {
     glGenFramebuffers(1, (GLuint *)&FBO);
     glBindFramebuffer(GL_DRAW_FRAMEBUFFER, FBO);
 
+#ifdef _IS_IOS_
+    glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, self->texture_name, 0);
+#else
     glFramebufferTexture(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, self->texture_name, 0);
+#endif
 
     GLenum fboStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
     if (fboStatus != GL_FRAMEBUFFER_COMPLETE) {
@@ -230,6 +236,8 @@ std::string Shader::initShader() {
     gdk_gl_context_clear_current();
 #elif _IS_MACOS_
     CGLSetCurrentContext(NULL);
+#elif _IS_IOS_
+    iosClearContext();
 #elif _IS_WIN_
     // pixelBuffer = make_unique<uint8_t[]>(width * height * 4);
 
@@ -261,13 +269,13 @@ std::string Shader::initShaderToy() {
     // are not supported, replace them
     // texture ==> texture2D
     // round == floor
-#ifdef _IS_ANDROID_
+#if defined(_IS_ANDROID_) || defined(_IS_IOS_)
     replaceAll(fragmentSource, "texture(", "texture2D(");
     replaceAll(fragmentSource, "round(", "floor(");
 #endif
 
     vertexSource =
-#ifdef _IS_ANDROID_
+#if defined(_IS_ANDROID_) || defined(_IS_IOS_)
 //            "#version 300 es\n"
             "precision highp float;\n"
             "precision mediump int;\n"
@@ -282,7 +290,7 @@ std::string Shader::initShaderToy() {
             "}                                 \n";
 
     std::string common =
-#ifdef _IS_ANDROID_
+#if defined(_IS_ANDROID_) || defined(_IS_IOS_)
                          "precision highp float;         \n"
 #endif
                          "uniform sampler2D iChannel0;   \n"
@@ -299,6 +307,12 @@ std::string Shader::initShaderToy() {
     std::string main = "\nvoid main() {\n"
                        "    mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n"
                        "}\n";
+#elif defined(_IS_IOS_)
+    // iOS uses ES 2.0 syntax (gl_FragColor) but renders via FBO (y-flip needed)
+    std::string fragOutputDecl = "";
+    std::string main = "\nvoid main() {\n"
+                       "    mainImage(gl_FragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n"
+                       "}\n";
 #else
     std::string fragOutputDecl = "";
     std::string main = "\nvoid main() {\n"
@@ -309,6 +323,9 @@ std::string Shader::initShaderToy() {
     fragmentSource =
 #if defined _IS_LINUX_ || defined _IS_WIN_ || defined _IS_MACOS_
     "#version 330 core\n"
+    "#extension GL_OES_standard_derivatives : enable\n" +
+    fragOutputDecl +
+#elif defined(_IS_IOS_)
     "#extension GL_OES_standard_derivatives : enable\n" +
     fragOutputDecl +
 #else
@@ -403,13 +420,15 @@ void Shader::drawFrame() {
     gdk_gl_context_make_current(self->context);
 #elif _IS_MACOS_
     CGLSetCurrentContext(self->cglContext);
+#elif _IS_IOS_
+    iosMakeContextCurrent(self);
 #elif _IS_WIN_
     wglMakeCurrent(self->hdc, self->hrc);
 #endif
 
     GLfloat time = (GLfloat) clock() / (GLfloat) CLOCKS_PER_SEC - startTime;
 
-#if defined _IS_LINUX_ || defined _IS_MACOS_
+#if defined _IS_LINUX_ || defined _IS_MACOS_ || defined _IS_IOS_
     // Bind FBO FIRST, before any drawing operations
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
     glViewport(0, 0, width, height);
@@ -423,7 +442,7 @@ void Shader::drawFrame() {
     uniformsList.sendAllUniforms();
 
     // Rebind FBO texture as color attachment (sampler binding may have disturbed it)
-#if defined _IS_LINUX_ || defined _IS_MACOS_
+#if defined _IS_LINUX_ || defined _IS_MACOS_ || defined _IS_IOS_
     glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 #endif
 
@@ -464,6 +483,21 @@ void Shader::drawFrame() {
 
     CGLSetCurrentContext(NULL);
     macosMarkTextureFrameAvailable(self);
+#elif _IS_IOS_
+    glBindVertexArray(VAO);
+    glDrawArrays(GL_TRIANGLES, 0, 6);
+    glBindVertexArray(0);
+
+    // Read pixels from FBO into CPU buffer
+    glBindFramebuffer(GL_READ_FRAMEBUFFER, FBO);
+    glReadPixels(0, 0, width, height, GL_RGBA, GL_UNSIGNED_BYTE,
+                 iosGetTextureBuffer(self));
+
+    glFlush();
+    glFinish();
+
+    iosClearContext();
+    iosMarkTextureFrameAvailable(self);
 #elif _IS_WIN_
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);

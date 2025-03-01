@@ -8,6 +8,8 @@
 #include <GL/glew.h>
 #elif _IS_MACOS_
 #include <OpenGL/gl3.h>
+#elif _IS_IOS_
+#include <OpenGLES/ES3/gl.h>
 #elif _IS_WIN_
 #include <GL/glew.h>
 #endif
@@ -51,7 +53,7 @@ void Sampler2D::genTexture(int n)
         glGenTextures(1, &texture_index);
     }
     glActiveTexture(GL_TEXTURE0 + nTexture);
-#ifndef _IS_MACOS_
+#if !defined(_IS_MACOS_) && !defined(_IS_IOS_)
     glEnable(GL_TEXTURE_2D);
 #endif
     glBindTexture(GL_TEXTURE_2D, texture_index);
@@ -59,8 +61,14 @@ void Sampler2D::genTexture(int n)
     // filtering and wrap modes
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+#if defined(_IS_ANDROID_) || defined(_IS_IOS_)
+    // OpenGL ES doesn't support GL_CLAMP_TO_BORDER; use GL_CLAMP_TO_EDGE
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+#else
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+#endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)data.data());
     // glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)data.data());

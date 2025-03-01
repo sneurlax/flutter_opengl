@@ -40,6 +40,11 @@
 #include <any>
 #include <glm/glm.hpp>
 #endif
+#ifdef _IS_IOS_
+#include <OpenGLES/ES3/gl.h>
+#include <any>
+#include <glm/glm.hpp>
+#endif
 
 
 typedef enum {

@@ -14,6 +14,8 @@ typedef int32_t EGLint;
 #elif defined(_IS_MACOS_)
 // macOS doesn't have EGL; EGLint is used for width/height fields
 typedef int32_t EGLint;
+#elif defined(_IS_IOS_)
+typedef int32_t EGLint;
 #endif
 
 #ifdef _IS_ANDROID_
@@ -46,9 +48,14 @@ typedef int32_t EGLint;
 #include <OpenGL/OpenGL.h>
 #include <glm/glm.hpp>
 #endif
+#ifdef _IS_IOS_
+#include <OpenGLES/ES3/gl.h>
+#include <OpenGLES/ES3/glext.h>
+#include <glm/glm.hpp>
+#endif
 
 
-#if defined(_IS_LINUX_) || defined(_IS_ANDROID_) || defined(_IS_WIN_)
+#if defined(_IS_LINUX_) || defined(_IS_ANDROID_) || defined(_IS_WIN_) || defined(_IS_IOS_)
 extern "C" void eglPrintError(const std::string &note);
 #endif
 extern "C" void replaceAll(std::string& src, const std::string& search,

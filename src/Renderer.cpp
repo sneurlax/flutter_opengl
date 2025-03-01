@@ -15,6 +15,8 @@
     #include "uniformQueue.h"
 #elif _IS_MACOS_
     // macOS uses CGL for context management
+#elif _IS_IOS_
+    // iOS uses EAGL for context management (via ios_bridge)
 #elif _IS_WIN_
     #include <GL/glew.h>
 #endif
@@ -366,6 +368,10 @@ void Renderer::loop() {
     // On macOS, make context current for the render thread
     CGLSetCurrentContext(self->cglContext);
     CGLSetCurrentContext(NULL);
+#elif _IS_IOS_
+    // On iOS, make context current for the render thread
+    iosMakeContextCurrent(self);
+    iosClearContext();
 #endif
 
     Sampler2D *sampler;
@@ -418,6 +424,8 @@ void Renderer::loop() {
                     gdk_gl_context_make_current(self->context);
                 #elif _IS_MACOS_
                     CGLSetCurrentContext(self->cglContext);
+                #elif _IS_IOS_
+                    iosMakeContextCurrent(self);
                 #elif _IS_WIN_
                     wglMakeCurrent(self->hdc, self->hrc);
                 #endif
@@ -432,6 +440,8 @@ void Renderer::loop() {
                     gdk_gl_context_clear_current();
                 #elif _IS_MACOS_
                     CGLSetCurrentContext(NULL);
+                #elif _IS_IOS_
+                    iosClearContext();
                 #endif
                 break;
 
@@ -440,6 +450,8 @@ void Renderer::loop() {
                     gdk_gl_context_make_current(self->context);
                 #elif _IS_MACOS_
                     CGLSetCurrentContext(self->cglContext);
+                #elif _IS_IOS_
+                    iosMakeContextCurrent(self);
                 #elif _IS_WIN_
                     wglMakeCurrent(self->hdc, self->hrc);
                 #endif
@@ -448,6 +460,8 @@ void Renderer::loop() {
                     gdk_gl_context_clear_current();
                 #elif _IS_MACOS_
                     CGLSetCurrentContext(NULL);
+                #elif _IS_IOS_
+                    iosClearContext();
                 #endif
             break;
 
@@ -456,14 +470,14 @@ void Renderer::loop() {
                         gdk_gl_context_make_current(self->context);
                 #elif _IS_MACOS_
                         CGLSetCurrentContext(self->cglContext);
+                #elif _IS_IOS_
+                        iosMakeContextCurrent(self);
                 #elif _IS_WIN_
                         wglMakeCurrent(self->hdc, self->hrc);
                 #endif
 
-                // // shader->getUniforms().setSampler2D("iChannel0", shader->getUniforms().programObject, sampler2DToSet);
-                // shader->getUniforms().setAllSampler2D();
                 glActiveTexture(GL_TEXTURE0 + sampler2DToSet.nTexture);
-                #ifndef _IS_MACOS_
+                #if !defined(_IS_MACOS_) && !defined(_IS_IOS_)
                 glEnable(GL_TEXTURE_2D);
                 #endif
                 glBindTexture(GL_TEXTURE_2D, sampler2DToSet.texture_index);
@@ -481,6 +495,8 @@ void Renderer::loop() {
                         gdk_gl_context_clear_current();
                 #elif _IS_MACOS_
                         CGLSetCurrentContext(NULL);
+                #elif _IS_IOS_
+                        iosClearContext();
                 #endif
             break;
 
@@ -489,6 +505,8 @@ void Renderer::loop() {
                         gdk_gl_context_make_current(self->context);
                 #elif _IS_MACOS_
                         CGLSetCurrentContext(self->cglContext);
+                #elif _IS_IOS_
+                        iosMakeContextCurrent(self);
                 #elif _IS_WIN_
                         wglMakeCurrent(self->hdc, self->hrc);
                 #endif
@@ -497,6 +515,8 @@ void Renderer::loop() {
                         gdk_gl_context_clear_current();
                 #elif _IS_MACOS_
                         CGLSetCurrentContext(NULL);
+                #elif _IS_IOS_
+                        iosClearContext();
                 #endif
             break;
 
