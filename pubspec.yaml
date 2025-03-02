@@ -31,6 +31,8 @@ flutter:
         pluginClass: FlutterOpenglPlugin
       linux:
         pluginClass: FlutterOpenglPlugin
+      ios:
+        pluginClass: FlutterOpenglPlugin
       macos:
         pluginClass: FlutterOpenglPlugin
       windows:

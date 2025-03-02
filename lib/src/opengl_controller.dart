@@ -21,7 +21,7 @@ class OpenGLController {
         ? ffi.DynamicLibrary.open("libflutter_opengl_plugin.so")
         : Platform.isWindows
             ? ffi.DynamicLibrary.open("flutter_opengl_plugin.dll")
-            : ffi.DynamicLibrary.process(); // Linux & macOS
+            : ffi.DynamicLibrary.process(); // Linux, macOS & iOS
     openglFFI = FlutterOpenGLFfi.fromLookup(nativeLib.lookup);
     openglPlugin = FlutterOpengl();
   }
