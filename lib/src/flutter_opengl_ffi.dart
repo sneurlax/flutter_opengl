@@ -4,24 +4,7 @@ import 'dart:typed_data';
 import 'package:ffi/ffi.dart';
 import 'package:flutter/material.dart';
 
-enum PointerEventType {
-  onPointerDown,
-  onPointerMove,
-  onPointerUp,
-}
-
-enum UniformType {
-  uniformBool,
-  uniformInt,
-  uniformFloat,
-  uniformVec2,
-  uniformVec3,
-  uniformVec4,
-  uniformMat2,
-  uniformMat3,
-  uniformMat4,
-  uniformSampler2D,
-}
+import 'opengl_enums.dart';
 
 /// FFI bindings to Flutter_OpenGL
 class FlutterOpenGLFfi {

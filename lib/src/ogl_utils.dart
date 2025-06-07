@@ -8,6 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:image/image.dart';
 
 import 'opengl_controller.dart';
+import 'opengl_enums.dart';
 
 /// class to store captured widget
 class CapturedWidget {
@@ -15,17 +16,6 @@ class CapturedWidget {
   Size size;
 
   CapturedWidget(this.byteData, this.size);
-}
-
-enum AddMethod {
-  /// Add Sampler2D uniform if not already exists
-  add,
-
-  /// Replace Sampler2D uniform with another with different size
-  replace,
-
-  /// Set a new Sampler2D uniform with the same size
-  set,
 }
 
 class OGLUtils {
