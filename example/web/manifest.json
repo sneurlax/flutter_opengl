@@ -1,0 +1,8 @@
+{
+  "name": "flutter_opengl_example",
+  "short_name": "flutter_opengl",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#000000"
+}
