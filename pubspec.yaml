@@ -4,8 +4,8 @@ version: 0.10.0
 homepage: https://github.com/alnitak/flutter_opengl
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
-  flutter: ">=3.10.0"
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: ">=3.19.0"
 
 dependencies:
   flutter:
@@ -17,6 +17,8 @@ dependencies:
   image: ^4.0.13
 
   permission_handler: ^11.0.0
+
+  web: ^1.1.0
 
 dev_dependencies:
   flutter_test:
@@ -37,3 +39,6 @@ flutter:
         pluginClass: FlutterOpenglPlugin
       windows:
         pluginClass: FlutterOpenglPluginCApi
+      web:
+        pluginClass: FlutterOpenglWeb
+        fileName: src/flutter_opengl_web.dart
