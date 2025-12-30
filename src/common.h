@@ -4,13 +4,17 @@
 // On Android, also __linux__ is defined. So make my own
 #ifdef __ANDROID__
     #define _IS_ANDROID_ 1
-    #define WITH_OPENCV
+    #ifndef WITH_OPENCV
+        #define WITH_OPENCV
+    #endif
 #elif __linux__
     #define _IS_LINUX_ 1
-    #define WITH_OPENCV
+    // WITH_OPENCV is optionally defined via CMake
 #elif _WIN32 | _WIN64
     #define _IS_WIN_ 1
-    #define WITH_OPENCV
+    #ifndef WITH_OPENCV
+        #define WITH_OPENCV
+    #endif
 #endif
 
 #ifdef _IS_ANDROID_
@@ -62,9 +66,9 @@ typedef struct flutter_opengl_plugin_context
 {
     GdkGLContext *context;
     unsigned int texture_name;
-    FlTextureRegistrar *texture_registrar = nullptr;
-    FlMyTextureGL *myTexture = nullptr;
-    g_autoptr(FlTexture) texture;
+    FlTextureRegistrar *texture_registrar;
+    FlMyTextureGL *myTexture;
+    FlTexture *texture;
     int width;
     int height;
 } OpenglPluginContext;
