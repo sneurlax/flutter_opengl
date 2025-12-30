@@ -5,21 +5,22 @@
 #include <glib-object.h>
 #include "flutter_opengl/flutter_opengl_plugin.h"
 #include <flutter_linux/flutter_linux.h>
-
+#include <vector>
 
 G_DECLARE_FINAL_TYPE(FlMyTextureGL,
                      fl_my_texture_gl,
                      FL,
                      MY_TEXTURE_GL,
-                     FlTextureGL)
+                     FlPixelBufferTexture)
 
 struct _FlMyTextureGL
 {
-    FlTextureGL parent_instance;
+    FlPixelBufferTexture parent_instance;
     uint32_t target;
     uint32_t name;
     uint32_t width;
     uint32_t height;
+    uint8_t *buffer;
 };
 
 
@@ -30,12 +31,12 @@ struct _FlMyTextureGL
 struct _FlutterOpenglPlugin
 {
   GObject parent_instance;
-  GdkGLContext *context = nullptr;
-  FlTextureRegistrar *texture_registrar = nullptr;
-  FlMyTextureGL *myTexture = nullptr;
-  unsigned int texture_name = 0;
-  g_autoptr(FlTexture) texture;
-  FlView *fl_view = nullptr;
+  GdkGLContext *context;
+  FlTextureRegistrar *texture_registrar;
+  FlMyTextureGL *myTexture;
+  unsigned int texture_name;
+  FlTexture *texture;
+  FlView *fl_view;
 };
 
 
