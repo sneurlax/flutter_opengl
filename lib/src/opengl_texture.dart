@@ -44,9 +44,9 @@ class OpenGLTexture extends StatelessWidget {
   final int id;
 
   const OpenGLTexture({
-    Key? key,
+    super.key,
     required this.id,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
