@@ -6,6 +6,8 @@
 #include <GLES3/gl32.h>
 #elif _IS_LINUX_
 #include <GL/glew.h>
+#elif _IS_MACOS_
+#include <OpenGL/gl3.h>
 #elif _IS_WIN_
 #include <GL/glew.h>
 #endif
@@ -49,7 +51,9 @@ void Sampler2D::genTexture(int n)
         glGenTextures(1, &texture_index);
     }
     glActiveTexture(GL_TEXTURE0 + nTexture);
+#ifndef _IS_MACOS_
     glEnable(GL_TEXTURE_2D);
+#endif
     glBindTexture(GL_TEXTURE_2D, texture_index);
 
     // filtering and wrap modes

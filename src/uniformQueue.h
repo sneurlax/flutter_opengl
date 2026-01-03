@@ -36,6 +36,12 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #endif
+#ifdef _IS_MACOS_
+#include <OpenGL/gl3.h>
+// Include <any> before GLM to prevent glm::any from shadowing std::any
+#include <any>
+#include <glm/glm.hpp>
+#endif
 
 
 typedef enum {

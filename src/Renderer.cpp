@@ -13,6 +13,8 @@
 
 #elif _IS_LINUX_
     #include "uniformQueue.h"
+#elif _IS_MACOS_
+    // macOS uses CGL for context management
 #elif _IS_WIN_
     #include <GL/glew.h>
 #endif
@@ -360,6 +362,11 @@ void Renderer::loop() {
 #if defined _IS_ANDROID_ || defined _IS_WIN_
     msg.push_back(MSG_INIT_OPENGL);
 #endif
+#ifdef _IS_MACOS_
+    // On macOS, make context current for the render thread
+    CGLSetCurrentContext(self->cglContext);
+    CGLSetCurrentContext(NULL);
+#endif
 
     Sampler2D *sampler;
     RenderThreadMessage _msg;
@@ -409,6 +416,8 @@ void Renderer::loop() {
             case MSG_START_CAPTURE_ON_UNIFORM:
                 #ifdef _IS_LINUX_
                     gdk_gl_context_make_current(self->context);
+                #elif _IS_MACOS_
+                    CGLSetCurrentContext(self->cglContext);
                 #elif _IS_WIN_
                     wglMakeCurrent(self->hdc, self->hrc);
                 #endif
@@ -421,24 +430,32 @@ void Renderer::loop() {
 
                 #ifdef _IS_LINUX_
                     gdk_gl_context_clear_current();
+                #elif _IS_MACOS_
+                    CGLSetCurrentContext(NULL);
                 #endif
                 break;
 
             case MSG_NEW_TEXTURE:
                 #ifdef _IS_LINUX_
                     gdk_gl_context_make_current(self->context);
+                #elif _IS_MACOS_
+                    CGLSetCurrentContext(self->cglContext);
                 #elif _IS_WIN_
                     wglMakeCurrent(self->hdc, self->hrc);
                 #endif
                     shader->getUniforms().setAllSampler2D();
                 #ifdef _IS_LINUX_
                     gdk_gl_context_clear_current();
+                #elif _IS_MACOS_
+                    CGLSetCurrentContext(NULL);
                 #endif
             break;
 
             case MSG_SET_TEXTURE:
                 #ifdef _IS_LINUX_
                         gdk_gl_context_make_current(self->context);
+                #elif _IS_MACOS_
+                        CGLSetCurrentContext(self->cglContext);
                 #elif _IS_WIN_
                         wglMakeCurrent(self->hdc, self->hrc);
                 #endif
@@ -446,7 +463,9 @@ void Renderer::loop() {
                 // // shader->getUniforms().setSampler2D("iChannel0", shader->getUniforms().programObject, sampler2DToSet);
                 // shader->getUniforms().setAllSampler2D();
                 glActiveTexture(GL_TEXTURE0 + sampler2DToSet.nTexture);
+                #ifndef _IS_MACOS_
                 glEnable(GL_TEXTURE_2D);
+                #endif
                 glBindTexture(GL_TEXTURE_2D, sampler2DToSet.texture_index);
                 glTexSubImage2D(
                     GL_TEXTURE_2D,
@@ -457,21 +476,27 @@ void Renderer::loop() {
                     sampler2DToSet.data.data()
                 );
                 sampler2DToSet.data.clear();
-                
+
                 #ifdef _IS_LINUX_
                         gdk_gl_context_clear_current();
+                #elif _IS_MACOS_
+                        CGLSetCurrentContext(NULL);
                 #endif
             break;
 
             case MSG_DELETE_TEXTURE:
                 #ifdef _IS_LINUX_
                         gdk_gl_context_make_current(self->context);
+                #elif _IS_MACOS_
+                        CGLSetCurrentContext(self->cglContext);
                 #elif _IS_WIN_
                         wglMakeCurrent(self->hdc, self->hrc);
                 #endif
                         glDeleteTextures(1, &textureIdToDelete);
                 #ifdef _IS_LINUX_
                         gdk_gl_context_clear_current();
+                #elif _IS_MACOS_
+                        CGLSetCurrentContext(NULL);
                 #endif
             break;
 
