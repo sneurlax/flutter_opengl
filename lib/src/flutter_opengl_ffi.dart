@@ -415,7 +415,7 @@ class FlutterOpenGLFfi {
 
     int ret = _addUniform(
       name.toNativeUtf8().cast<ffi.Char>(),
-      UniformType.uniformMat3.index,
+      UniformType.uniformMat4.index,
       valT.cast<ffi.Void>(),
     );
     calloc.free(valT);
@@ -643,7 +643,7 @@ class FlutterOpenGLFfi {
 
   /// * set MAT4
   bool setMat4Uniform(String name, List<double> val) {
-    ffi.Pointer<ffi.Float> valT = calloc(ffi.sizeOf<ffi.Float>() * 12);
+    ffi.Pointer<ffi.Float> valT = calloc(ffi.sizeOf<ffi.Float>() * 16);
     valT[0] = val[0];
     valT[1] = val[1];
     valT[2] = val[2];
@@ -656,6 +656,10 @@ class FlutterOpenGLFfi {
     valT[9] = val[9];
     valT[10] = val[10];
     valT[11] = val[11];
+    valT[12] = val[12];
+    valT[13] = val[13];
+    valT[14] = val[14];
+    valT[15] = val[15];
 
     int ret = _setUniform(
       name.toNativeUtf8().cast<ffi.Char>(),
