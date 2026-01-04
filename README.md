@@ -1,12 +1,12 @@
 # flutter_opengl
 
-A Flutter OpenGL ES plugin using a Texture() widget. Supports Android, Linux and Windows. Many shaders from ShaderToy.com can be copy/pasted
+A Flutter OpenGL ES plugin using a Texture() widget. Supports Android, iOS, Linux, macOS, Windows, and Web. Many shaders from ShaderToy.com can be copy/pasted.
 
 ## Getting Started
 
-| Android | Windows | Linux | iOS | MacOS | Web|
+| Android | iOS | Linux | macOS | Windows | Web |
 | ---- | ---- | ---- | ---- | ---- | ---- |
-| ✅  | ✅ | ✅ | x | x | x|
+| ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 ![gif](https://github.com/alnitak/flutter_opengl/blob/master/images/flutter_opengl.gif?raw=true "Flutter OpenGL Demo")
 ![gif](https://github.com/alnitak/flutter_opengl/blob/master/images/flutter_OpenGL-video.gif?raw=true "Flutter OpenGL Demo")
@@ -125,33 +125,29 @@ The plugin uses `FlTextureGL` for zero-copy GPU texture sharing, which works wit
 
 
 ## Windows
-Go into the windows folder from the project root.
--  clone **Native_SDK**:
 
-```git clone https://github.com/powervr-graphics/Native_SDK.git```
+GLEW 2.2.0 and GLM headers are bundled with the plugin, so no manual dependency setup is required for a basic build.
 
-you can safely delete all but the *lib* and *include* directories from the cloned repo
+OpenCV is optional. To build with OpenCV support, run `SCRIPTS\setupOpenCV-windows.bat` or manually download OpenCV from https://github.com/opencv/opencv/releases and extract it into the SCRIPTS directory.
 
-- clone **glm**
+## iOS
 
-```git clone https://github.com/g-truc/glm.git```
+No additional setup is required. The plugin uses OpenGL ES 3.0 via the system-provided frameworks.
 
-- download **glew** *Binaries for Windows 32-bit and 64-bit* from here:
+## macOS
 
-[https://glew.sourceforge.net](https://glew.sourceforge.net/) (sources at https://github.com/nigels-com/glew)
+No additional setup is required. The plugin uses CGL for the OpenGL context and integrates via FlutterTexture.
 
-extract the zip and rename its main directory to "glew"
+## Web
 
-- run "SCRIPTS\setupOpenCV-windows.bat" or manually download OpenCV and extract it into SCRIPT dir:
-https://github.com/opencv/opencv/releases/download/4.7.0/opencv-4.7.0-windows.exe
+The plugin uses a WebGL2 rendering backend. Your target browser must support **WebGL2**. All modern browsers (Chrome, Firefox, Safari 15+, Edge) support WebGL2.
 
 ## Android
-Run the script *SCRIPT/setupOpenCV-android.sh* or manually download OpenCV from here https://github.com/opencv/opencv/releases/download/4.7.0/opencv-4.7.0-android-sdk.zip locate libs and include folders and copy them into android/src/opencv.
+
+No additional setup is required for a basic build. OpenCV is optional. To build with OpenCV support, run `SCRIPTS/setupOpenCV-android.sh` or manually download OpenCV from https://github.com/opencv/opencv/releases and copy the libs and include folders into `android/src/opencv`.
 
 # TODO
-- better documentation
-- the c/c++ code is not "state of the art" written! PRs are welcomed
-- iOS, Mac and Web support
-- ES 3 on Android (now supports 2)
-- displayed FPS seems not to be correct
-- leave OpenCV into the plugin for further use?
+- Better documentation
+- The C/C++ code is not "state of the art" written! PRs are welcomed
+- ES 3 on Android (currently supports ES 2)
+- Displayed FPS seems not to be correct
