@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
@@ -42,7 +41,7 @@ class TextureAndTabs extends ConsumerWidget {
     final textureSize = ref.watch(stateTextureSize);
     final textureId = ref.watch(stateTextureId);
 
-    if (Platform.isAndroid) {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
         var status = await Permission.camera.status;
         if (status.isDenied) {
