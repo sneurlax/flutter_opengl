@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'flutter_opengl_ffi.dart';
 import 'opengl_backend.dart';
@@ -9,6 +10,10 @@ import 'opengl_enums.dart';
 /// Native FFI implementation of [OpenGLBackend].
 class NativeOpenGLBackend implements OpenGLBackend {
   final FlutterOpenGLFfi _ffi;
+
+  /// Method channel used to ask the native platform to allocate a texture.
+  final MethodChannel _channel =
+      const MethodChannel('flutter_opengl_plugin');
 
   NativeOpenGLBackend(this._ffi);
 
@@ -147,4 +152,19 @@ class NativeOpenGLBackend implements OpenGLBackend {
 
   @override
   bool stopCapture() => _ffi.stopCapture();
+
+  @override
+  Future<int> createSurface(int width, int height) async {
+    int? textureId;
+    try {
+      textureId = await _channel.invokeMethod<int>('createSurface', {
+        'width': width,
+        'height': height,
+      });
+    } on PlatformException catch (e) {
+      debugPrint(e.toString());
+      return -1;
+    }
+    return textureId ?? -1;
+  }
 }

@@ -87,7 +87,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
           child: FutureBuilder(
             /// The surface size identifies the real texture size and
             /// it is not related to the above SizedBox size
-            future: OpenGLController().openglPlugin.createSurface(300, 200),
+            future: OpenGLController().openglFFI.createSurface(300, 200),
             builder: (_, snapshot) {
               if (snapshot.hasError || !snapshot.hasData) {
                 return const SizedBox.shrink();
