@@ -42,7 +42,7 @@ class Controls extends ConsumerWidget {
                 onPressed: () async {
                   fpsTimer?.cancel();
                   Size textureSize = ref.read(stateTextureSize);
-                  int id = await OpenGLController().openglPlugin.createSurface(
+                  int id = await OpenGLController().openglFFI.createSurface(
                         textureSize.width.toInt(),
                         textureSize.height.toInt(),
                       );

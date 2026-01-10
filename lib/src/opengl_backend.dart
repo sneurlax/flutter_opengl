@@ -70,4 +70,11 @@ abstract class OpenGLBackend {
 
   bool startCaptureOnSampler2D(String name, String completeFilePath);
   bool stopCapture();
+
+  /// Allocate a rendering surface of the given [width] x [height] and return
+  /// a texture ID that can be passed to [OpenGLTexture].
+  ///
+  /// On native platforms this calls into the platform host via a method
+  /// channel; on web it creates an HTML canvas and registers a platform view.
+  Future<int> createSurface(int width, int height);
 }

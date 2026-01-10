@@ -97,7 +97,7 @@ class RendererWidget extends StatelessWidget {
 
         return FutureBuilder<int>(
           // get texture id
-          future: OpenGLController().openglPlugin.createSurface(
+          future: OpenGLController().openglFFI.createSurface(
                 captured.data!.size.width.toInt(),
                 captured.data!.size.height.toInt(),
               ),
