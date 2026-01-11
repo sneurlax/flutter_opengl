@@ -146,8 +146,8 @@ The plugin uses a WebGL2 rendering backend. Your target browser must support **W
 
 No additional setup is required for a basic build. OpenCV is optional. To build with OpenCV support, run `SCRIPTS/setupOpenCV-android.sh` or manually download OpenCV from https://github.com/opencv/opencv/releases and copy the libs and include folders into `android/src/opencv`.
 
-# TODO
-- Better documentation
-- The C/C++ code is not "state of the art" written! PRs are welcomed
-- ES 3 on Android (currently supports ES 2)
-- Displayed FPS seems not to be correct
+# Known Limitations
+- OpenCV video capture is only available on Android, Linux, and Windows (not supported on Web, iOS, or macOS)
+- OpenGL is deprecated by Apple on macOS and iOS in favor of Metal; the plugin suppresses deprecation warnings but future OS updates may affect compatibility
+- Only single-layer ShaderToy shaders (Image tab) are supported; multi-pass shaders with buffers are not yet implemented
+- On Android, OpenGL ES 2.0 is used; some shaders requiring ES 3.0 features may not work

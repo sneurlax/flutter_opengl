@@ -1,15 +1,12 @@
-## 0.10.0
+## 0.0.1
 
-- Add Web platform support via a WebGL2 rendering backend
-- Add iOS platform support using OpenGL ES 3.0
-- Add macOS platform support using CGL and FlutterTexture
-- Bundle GLEW 2.2.0 and GLM headers for Windows (no manual setup required)
-- Make OpenCV optional on Android and Windows
-- Modernize Android plugin configuration for AGP 8.x
-- Refactor Dart layer with abstract OpenGLBackend interface and conditional imports
-- Update SDK constraints and dependencies for Dart 3.x
+Initial public release.
 
-## 0.9.0
-
-- Code rewritten with FFI-based rendering pipeline
-- Support for Android, Linux, and Windows
+- 6-platform support: Android, iOS, Linux, macOS, Windows, and Web
+- GLSL shader rendering via OpenGL ES / OpenGL / WebGL2
+- ShaderToy compatibility (single-layer Image shaders)
+- Sampler2D texture uniforms (iChannel0-3) with runtime updates
+- Mouse interaction via iMouse uniform
+- Custom uniform support (bool, int, float, vec2-4, mat2-4)
+- FPS reporting
+- Optional OpenCV video capture on Android, Linux, and Windows
