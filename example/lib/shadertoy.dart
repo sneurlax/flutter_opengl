@@ -1,9 +1,9 @@
-/// Shaders taken from ShaderToy.com
-/// These are only fragment shaders
-/// Many of the shaders can be copy/pasted.
-/// Also many of them are heavy for mobile devices (few FPS)
-/// "iMouse", "iTime", "iResolution", "iChannel0" and "iChannel1" uniforms
-/// are currently supported
+// Shaders taken from ShaderToy.com
+// These are only fragment shaders
+// Many of the shaders can be copy/pasted.
+// Also many of them are heavy for mobile devices (few FPS)
+// "iMouse", "iTime", "iResolution", "iChannel0" and "iChannel1" uniforms
+// are currently supported
 
 List<Map<String, String>> shaderToy = [
 //   {
