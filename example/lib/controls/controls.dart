@@ -6,7 +6,7 @@ import 'package:flutter_opengl/flutter_opengl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../states.dart';
-import 'ShaderButtons.dart';
+import 'shader_buttons.dart';
 import 'texture_chooser.dart';
 import 'texture_sizes.dart';
 

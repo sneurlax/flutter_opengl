@@ -1,6 +1,3 @@
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,9 +8,7 @@ import '../states.dart';
 /// Shader buttons (without texture)
 ///
 class ShaderButtons extends ConsumerWidget {
-  const ShaderButtons({
-    Key? key,
-  }) : super(key: key);
+  const ShaderButtons({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -47,7 +42,6 @@ class ShaderButtons extends ConsumerWidget {
                   OpenGLController().openglFFI.setShaderToy(
                         shaderToy[i]['fragment']!,
                       );
-                  // Size size = OpenGLController().openglFFI.getTextureSize();
                   ref.read(stateShaderIndex.notifier).state = i;
 
                   /// reset bottom TextureChooser
@@ -66,9 +60,10 @@ class ShaderButtons extends ConsumerWidget {
                   }
                 },
                 style: ButtonStyle(
-                  fixedSize: const MaterialStatePropertyAll(Size(65, 45)),
+                  fixedSize: const WidgetStatePropertyAll(Size(65, 55)),
+                  padding: const WidgetStatePropertyAll(EdgeInsets.symmetric(horizontal: 4, vertical: 2)),
                   backgroundColor: i == activeButtonId
-                      ? const MaterialStatePropertyAll(Colors.green)
+                      ? const WidgetStatePropertyAll(Colors.green)
                       : null,
                 ),
                 child: Column(
@@ -76,17 +71,16 @@ class ShaderButtons extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('${i + 1}'),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
+                      Wrap(
                         children: [
                           if (hasIChannel0)
-                            const Text('0 ', textScaleFactor: 0.8),
+                            const Text('0 ', textScaler: TextScaler.linear(0.8)),
                           if (hasIChannel1)
-                            const Text('1 ', textScaleFactor: 0.8),
+                            const Text('1 ', textScaler: TextScaler.linear(0.8)),
                           if (hasIChannel2)
-                            const Text('2 ', textScaleFactor: 0.8),
+                            const Text('2 ', textScaler: TextScaler.linear(0.8)),
                           if (hasIChannel3)
-                            const Text('3', textScaleFactor: 0.8),
+                            const Text('3', textScaler: TextScaler.linear(0.8)),
                         ],
                       ),
                   ],
