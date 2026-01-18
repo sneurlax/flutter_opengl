@@ -154,11 +154,11 @@ bool Renderer::initOpenGL() {
         return false;
     }
 
-    eglSwapInterval(self->display, 1);
-
     self->display = display;
     self->surface = surface;
     self->context = context;
+
+    eglSwapInterval(self->display, 1);
 
     return true;
 }
