@@ -76,7 +76,7 @@ bool Renderer::setNativeAndroidWindow(jobject surface) {
 bool Renderer::initOpenGL() {
     const EGLint attribs[] = {
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
             EGL_BLUE_SIZE, 8,
             EGL_GREEN_SIZE, 8,
             EGL_RED_SIZE, 8,
@@ -125,18 +125,8 @@ bool Renderer::initOpenGL() {
         return false;
     }
 
-    // can't get ES3 to work!
-    const EGLint attribs2[] = {
-            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-            EGL_BLUE_SIZE, 8,
-            EGL_GREEN_SIZE, 8,
-            EGL_RED_SIZE, 8,
-            EGL_NONE
-    };
-    eglChooseConfig(display, attribs2, &config, 1, &numConfigs);
     const EGLint context_attribs[] = {
-            EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE
+            EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE
     };
     if (!(context = eglCreateContext(display, config, 0, context_attribs))) {
         eglPrintError("eglCreateContext()");
