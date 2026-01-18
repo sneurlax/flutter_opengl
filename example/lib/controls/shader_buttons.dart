@@ -37,26 +37,37 @@ class ShaderButtons extends ConsumerWidget {
               bool hasIChannel3 =
                   shaderToy[i]['fragment']!.contains('iChannel3');
               return ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   ref.read(stateUrl.notifier).state = shaderToy[i]['url']!;
                   OpenGLController().openglFFI.setShaderToy(
                         shaderToy[i]['fragment']!,
                       );
                   ref.read(stateShaderIndex.notifier).state = i;
 
-                  /// reset bottom TextureChooser
-                  ref.read(stateChannel0.notifier).state =
-                      TextureParams().copyWith(assetsImage: '');
-                  ref.read(stateChannel1.notifier).state =
-                      TextureParams().copyWith(assetsImage: '');
-                  ref.read(stateChannel2.notifier).state =
-                      TextureParams().copyWith(assetsImage: '');
-                  ref.read(stateChannel3.notifier).state =
-                      TextureParams().copyWith(assetsImage: '');
                   /// stop capturing
                   if (ref.read(stateCaptureRunning)) {
                     OpenGLController().openglFFI.stopCapture();
                     ref.read(stateCaptureRunning.notifier).state = false;
+                  }
+
+                  /// Auto-load a default texture for each iChannel the
+                  /// shader uses so it doesn't render black.
+                  const defaultAsset = 'assets/flutter.png';
+                  final frag = shaderToy[i]['fragment']!;
+                  for (int ch = 0; ch < 4; ch++) {
+                    if (frag.contains('iChannel$ch')) {
+                      await OGLUtils.setAssetTexture(
+                          'iChannel$ch', defaultAsset);
+                      ref.read([stateChannel0, stateChannel1,
+                          stateChannel2, stateChannel3][ch].notifier)
+                        .state = TextureParams()
+                            .copyWith(assetsImage: defaultAsset);
+                    } else {
+                      ref.read([stateChannel0, stateChannel1,
+                          stateChannel2, stateChannel3][ch].notifier)
+                        .state = TextureParams()
+                            .copyWith(assetsImage: '');
+                    }
                   }
                 },
                 style: ButtonStyle(
