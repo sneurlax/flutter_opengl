@@ -264,19 +264,19 @@ std::string Shader::initShaderToy() {
     // https://www.shadertoy.com/view/llySRh
     // https://www.shadertoy.com/view/Mss3zH
 
-    // IMPORT FROM SHADERTOY on Android:
-    // Since for now only ES 2 is supported and the below ES 3 functions 
-    // are not supported, replace them
-    // texture ==> texture2D
-    // round == floor
-#if defined(_IS_ANDROID_) || defined(_IS_IOS_)
+    // iOS still uses ES 2.0; replace ES 3 functions with ES 2 equivalents
+#if defined(_IS_IOS_)
     replaceAll(fragmentSource, "texture(", "texture2D(");
     replaceAll(fragmentSource, "round(", "floor(");
 #endif
 
     vertexSource =
-#if defined(_IS_ANDROID_) || defined(_IS_IOS_)
-//            "#version 300 es\n"
+#if defined(_IS_ANDROID_)
+            "#version 300 es\n"
+            "precision highp float;\n"
+            "precision mediump int;\n"
+            "in vec4 a_Position;               \n"
+#elif defined(_IS_IOS_)
             "precision highp float;\n"
             "precision mediump int;\n"
             "attribute vec4 a_Position;        \n"
@@ -307,16 +307,17 @@ std::string Shader::initShaderToy() {
     std::string main = "\nvoid main() {\n"
                        "    mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n"
                        "}\n";
+#elif defined(_IS_ANDROID_)
+    // Android ES 3.0: gl_FragColor doesn't exist; declare an output variable
+    std::string fragOutputDecl = "out vec4 fragColor;\n";
+    std::string main = "\nvoid main() {\n"
+                       "    mainImage(fragColor, gl_FragCoord.xy);\n"
+                       "}\n";
 #elif defined(_IS_IOS_)
     // iOS uses ES 2.0 syntax (gl_FragColor) but renders via FBO (y-flip needed)
     std::string fragOutputDecl = "";
     std::string main = "\nvoid main() {\n"
                        "    mainImage(gl_FragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n"
-                       "}\n";
-#else
-    std::string fragOutputDecl = "";
-    std::string main = "\nvoid main() {\n"
-                       "    mainImage(gl_FragColor, gl_FragCoord.xy);\n"
                        "}\n";
 #endif
 
@@ -325,11 +326,13 @@ std::string Shader::initShaderToy() {
     "#version 330 core\n"
     "#extension GL_OES_standard_derivatives : enable\n" +
     fragOutputDecl +
+#elif defined(_IS_ANDROID_)
+    "#version 300 es\n"
+    "precision highp float;\n" +
+    fragOutputDecl +
 #elif defined(_IS_IOS_)
     "#extension GL_OES_standard_derivatives : enable\n" +
     fragOutputDecl +
-#else
-    "#extension GL_OES_standard_derivatives : enable\n" +
 #endif
     common +
     fragmentSource +
