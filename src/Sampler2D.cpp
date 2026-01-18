@@ -59,7 +59,7 @@ void Sampler2D::genTexture(int n)
     glBindTexture(GL_TEXTURE_2D, texture_index);
 
     // filtering and wrap modes
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 #if defined(_IS_ANDROID_) || defined(_IS_IOS_)
     // OpenGL ES doesn't support GL_CLAMP_TO_BORDER; use GL_CLAMP_TO_EDGE
@@ -71,9 +71,7 @@ void Sampler2D::genTexture(int n)
 #endif
 
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, (void*)data.data());
-    // glTexImage2D(GL_TEXTURE_2D, 0, GL_LUMINANCE, width, height, 0, GL_LUMINANCE, GL_UNSIGNED_BYTE, (void*)data.data());
-    // glGenerateMipmap(GL_TEXTURE_2D);
-    // glBindTexture(GL_TEXTURE_2D, texture_index);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     data.clear();
 }
