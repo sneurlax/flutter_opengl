@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'main_in_deep.dart';
 
 void main() {
   OpenGLController().initializeGL();
-  runApp(const MaterialApp(
-    home: MyApp(),
+  runApp(const ProviderScope(
+    child: MaterialApp(
+      home: MyApp(),
+    ),
   ));
 }
 
@@ -106,6 +111,14 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             },
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const TextureAndTabs()),
+          );
+        },
+        child: const Icon(Icons.explore),
       ),
     );
   }
