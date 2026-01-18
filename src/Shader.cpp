@@ -292,6 +292,9 @@ std::string Shader::initShaderToy() {
     std::string common =
 #if defined(_IS_ANDROID_) || defined(_IS_IOS_)
                          "precision highp float;         \n"
+                         "#define HW_PERFORMANCE 0       \n"
+#else
+                         "#define HW_PERFORMANCE 1       \n"
 #endif
                          "uniform sampler2D iChannel0;   \n"
                          "uniform sampler2D iChannel1;   \n"
