@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
 
 /// Page to edit and compile the shader
@@ -13,17 +12,16 @@ import 'package:flutter_opengl/flutter_opengl.dart';
 /// - press the "add TEST" button
 /// - try the behavior by pressing the increment/decrement TEST buttons
 class EditShader extends StatelessWidget {
-  const EditShader({
-    Key? key,
-  }) : super(key: key);
+  const EditShader({super.key});
 
   @override
   Widget build(BuildContext context) {
     double test = 0.1;
 
     ValueNotifier<String> compileError = ValueNotifier('');
-    String vs = OpenGLController().openglFFI.getVertexShader();
-    String fs = OpenGLController().openglFFI.getFragmentShader();
+    final ready = OpenGLController().openglFFI.rendererStatus();
+    String vs = ready ? OpenGLController().openglFFI.getVertexShader() : '';
+    String fs = ready ? OpenGLController().openglFFI.getFragmentShader() : '';
 
     TextEditingController vsController = TextEditingController(text: vs);
     TextEditingController fsController = TextEditingController(text: fs);
@@ -45,7 +43,7 @@ class EditShader extends StatelessWidget {
             /// Compile button
             ElevatedButton(
               style: const ButtonStyle(
-                  backgroundColor: MaterialStatePropertyAll(Colors.green)),
+                  backgroundColor: WidgetStatePropertyAll(Colors.green)),
               onPressed: () {
                 String err = OpenGLController().openglFFI.setShader(
                       true,
@@ -135,7 +133,7 @@ class EditShader extends StatelessWidget {
               children: [
                 const Text(
                   'Vertex shader',
-                  textScaleFactor: 1.5,
+                  textScaler: TextScaler.linear(1.5),
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 TextField(
@@ -150,7 +148,7 @@ class EditShader extends StatelessWidget {
                 const SizedBox(height: 12),
                 const Text(
                   'Fragment shader',
-                  textScaleFactor: 1.5,
+                  textScaler: TextScaler.linear(1.5),
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 TextField(

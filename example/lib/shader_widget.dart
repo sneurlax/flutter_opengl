@@ -14,10 +14,10 @@ class ShaderWidget extends StatefulWidget {
   final int shaderToyIndex;
 
   const ShaderWidget({
-    Key? key,
+    super.key,
     required this.shaderToyIndex,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<ShaderWidget> createState() => _ShaderWidgetState();
@@ -67,10 +67,10 @@ class RendererWidget extends StatelessWidget {
   final int shaderToyIndex;
 
   const RendererWidget({
-    Key? key,
+    super.key,
     required this.childKeyToCapture,
     required this.shaderToyIndex,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

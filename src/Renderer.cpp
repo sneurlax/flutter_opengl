@@ -326,7 +326,8 @@ std::string Renderer::setShader(bool isContinuous,
     newShaderIsContinuous = isContinuous;
     msg.push_back(MSG_NEW_SHADER);
     if (loopRunning)
-        while (msg.back() == MSG_NEW_SHADER);
+        while (msg.back() == MSG_NEW_SHADER)
+            std::this_thread::yield();
     return compileError;
 }
 
@@ -340,7 +341,8 @@ std::string Renderer::setShaderToy(const char *fragmentSource) {
     newShaderIsContinuous = true;
     msg.push_back(MSG_NEW_SHADER);
     if (loopRunning)
-        while (msg.size() > 0 /* && msg.back() == MSG_NEW_SHADER*/);
+        while (msg.size() > 0)
+            std::this_thread::yield();
     return compileError;
 }
 

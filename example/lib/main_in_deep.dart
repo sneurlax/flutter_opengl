@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'shadertoy.dart';
 import 'states.dart';
 import 'test_widget.dart';
 
@@ -31,41 +32,69 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class TextureAndTabs extends ConsumerWidget {
-  const TextureAndTabs({
-    Key? key,
-  }) : super(key: key);
+class TextureAndTabs extends ConsumerStatefulWidget {
+  const TextureAndTabs({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TextureAndTabs> createState() => _TextureAndTabsState();
+}
+
+class _TextureAndTabsState extends ConsumerState<TextureAndTabs> {
+  @override
+  void initState() {
+    super.initState();
+    _initRenderer();
+  }
+
+  Future<void> _initRenderer() async {
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      await Permission.camera.request();
+      await Permission.videos.request();
+      await Permission.mediaLibrary.request();
+      await Permission.accessMediaLocation.request();
+    }
+
+    final size = ref.read(stateTextureSize);
+    final id = await OpenGLController().openglFFI.createSurface(
+          size.width.toInt(),
+          size.height.toInt(),
+        );
+    if (!mounted) return;
+    ref.read(stateTextureCreated.notifier).state =
+        OpenGLController().openglFFI.rendererStatus();
+    ref.read(stateTextureId.notifier).state = id;
+
+    OpenGLController().openglFFI.startThread();
+
+    // Auto-load the first shader so the user sees something immediately
+    if (shaderToy.isNotEmpty) {
+      OpenGLController().openglFFI.setShaderToy(shaderToy[0]['fragment']!);
+      ref.read(stateUrl.notifier).state = shaderToy[0]['url']!;
+      ref.read(stateShaderIndex.notifier).state = 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final textureSize = ref.watch(stateTextureSize);
     final textureId = ref.watch(stateTextureId);
 
-    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
-      WidgetsBinding.instance.addPostFrameCallback((timeStamp) async {
-        var status = await Permission.camera.status;
-        if (status.isDenied) {
-          await Permission.camera.request();
-        }
-        status = await Permission.videos.status;
-        if (status.isDenied) {
-          await Permission.videos.request();
-        }
-        status = await Permission.mediaLibrary.status;
-        if (status.isDenied) {
-          await Permission.mediaLibrary.request();
-        }
-        status = await Permission.accessMediaLocation.status;
-        if (status.isDenied) {
-          await Permission.accessMediaLocation.request();
-        }
-      });
-    }
+    final tabs = <Widget>[
+      const Tab(text: 'shaders'),
+      const Tab(text: 'edit shader'),
+      if (!kIsWeb) const Tab(text: 'test 1'),
+      if (!kIsWeb) const Tab(text: 'test 2'),
+    ];
+    final tabViews = <Widget>[
+      const Controls(),
+      const EditShader(),
+      if (!kIsWeb) const TestWidget(shaderToyCode: 'ls3cDB'),
+      if (!kIsWeb) const TestWidget(shaderToyCode: 'XdXGR7'),
+    ];
 
     return DefaultTabController(
-      length: 4,
+      length: tabs.length,
       child: Scaffold(
-        key: GlobalKey(),
         body: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
@@ -79,19 +108,14 @@ class TextureAndTabs extends ConsumerWidget {
               AspectRatio(
                   aspectRatio: textureSize.width / textureSize.height,
                   child: textureId == -1
-                      ? const ColoredBox(color: Colors.red)
+                      ? const ColoredBox(color: Colors.black)
                       : OpenGLTexture(id: textureId)),
 
-              const SizedBox(
+              SizedBox(
                 height: 40,
                 child: TabBar(
                   isScrollable: true,
-                  tabs: [
-                    Tab(text: 'shaders'),
-                    Tab(text: 'edit shader'),
-                    Tab(text: 'test 1'),
-                    Tab(text: 'test 2'),
-                  ],
+                  tabs: tabs,
                 ),
               ),
 
@@ -101,12 +125,7 @@ class TextureAndTabs extends ConsumerWidget {
               Expanded(
                 child: TabBarView(
                   physics: const NeverScrollableScrollPhysics(),
-                  children: [
-                    Controls(),
-                    const EditShader(),
-                    const TestWidget(shaderToyCode: 'ls3cDB'),
-                    const TestWidget(shaderToyCode: 'XdXGR7'),
-                  ],
+                  children: tabViews,
                 ),
               ),
             ],
@@ -120,41 +139,40 @@ class TextureAndTabs extends ConsumerWidget {
 /// FPS, texture size and shader URL
 ///
 class UpperText extends ConsumerWidget {
-  const UpperText({
-    Key? key,
-  }) : super(key: key);
+  const UpperText({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final fps = ref.watch(stateFPS);
     final shaderUrl = ref.watch(stateUrl);
     final textureSize = ref.watch(stateTextureSize);
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    return Wrap(
+      alignment: WrapAlignment.center,
+      spacing: 30,
       children: [
         Text(
             '${fps.toStringAsFixed(1)} FPS\n'
             '${textureSize.width.toInt()} x '
             '${textureSize.height.toInt()}',
             textAlign: TextAlign.center,
-            textScaleFactor: 1.2),
-        const SizedBox(width: 30),
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: shaderUrl,
-                style: const TextStyle(
-                    decoration: TextDecoration.underline,
-                    fontWeight: FontWeight.bold),
-                recognizer: TapGestureRecognizer()
-                  ..onTap = () {
-                    launchUrl(Uri.parse(shaderUrl));
-                  },
-              ),
-            ],
+            textScaler: TextScaler.linear(1.2)),
+        if (shaderUrl.isNotEmpty)
+          RichText(
+            text: TextSpan(
+              children: [
+                TextSpan(
+                  text: shaderUrl,
+                  style: const TextStyle(
+                      decoration: TextDecoration.underline,
+                      fontWeight: FontWeight.bold),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () {
+                      launchUrl(Uri.parse(shaderUrl));
+                    },
+                ),
+              ],
+            ),
           ),
-        ),
       ],
     );
   }

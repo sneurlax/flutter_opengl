@@ -1,9 +1,9 @@
-/// Shaders taken from ShaderToy.com
-/// These are only fragment shaders
-/// Many of the shaders can be copy/pasted.
-/// Also many of them are heavy for mobile devices (few FPS)
-/// "iMouse", "iTime", "iResolution", "iChannel0" and "iChannel1" uniforms
-/// are currently supported
+// Shaders taken from ShaderToy.com
+// These are only fragment shaders
+// Many of the shaders can be copy/pasted.
+// Also many of them are heavy for mobile devices (few FPS)
+// "iMouse", "iTime", "iResolution", "iChannel0" and "iChannel1" uniforms
+// are currently supported
 
 List<Map<String, String>> shaderToy = [
 //   {
@@ -610,7 +610,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 
 #define S(a, b, t) smoothstep(a, b, t)
 //#define CHEAP_NORMALS
-#define HAS_HEART
+//#define HAS_HEART
 #define USE_POST_PROCESSING
 
 vec3 N13(float p) {
@@ -785,7 +785,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
     t = (T+3.)*.5;										// make time sync with first lightnoing
     float colFade = sin(t*.2)*.5+.5+story;
     col *= mix(vec3(1.), vec3(.8, .9, 1.3), colFade);	// subtle color shift
-    float fade = S(0., 10., T);							// fade in at the start
+    float fade = S(0., .5, T);							// fade in at the start
     float lightning = sin(t*sin(t*10.));				// lighting flicker
     lightning *= pow(max(0., sin(t+sin(t))), 10.);		// lightning flash
     col *= 1.+lightning*fade*mix(1., .1, story*story);	// composite lightning
