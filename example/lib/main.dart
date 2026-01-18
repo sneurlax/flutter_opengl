@@ -114,7 +114,8 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.of(context).push(
+          OpenGLController().openglFFI.stopThread();
+          Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (_) => const TextureAndTabs()),
           );
         },
