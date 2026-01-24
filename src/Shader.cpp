@@ -110,10 +110,6 @@ void replaceAll(std::string& src, const std::string& search,
 
 Shader::Shader(OpenglPluginContext *textureStruct)
         : self(textureStruct),
-          width(0),
-          height(0),
-          programObject(0),
-          _isContinuous(true),
           uniformsList(UniformQueue()) {
 }
 

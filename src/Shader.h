@@ -116,10 +116,10 @@ private:
     bool _isContinuous = true;
     EGLint width;
     EGLint height;
-    GLuint programObject;
-    GLuint VAO, VBO;
-    GLuint FBO;
-    GLfloat startTime;
+    GLuint programObject = 0;
+    GLuint VAO = 0, VBO = 0;
+    GLuint FBO = 0;
+    GLfloat startTime = 0.0f;
 
     UniformQueue uniformsList;
 
