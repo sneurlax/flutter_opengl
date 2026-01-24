@@ -37,6 +37,7 @@
 
 #include <thread>
 #include <mutex>
+#include <atomic>
 
 class Renderer {
 
@@ -123,6 +124,7 @@ private:
 
     bool isShaderToy;
     bool loopRunning;
+    std::atomic<bool> shaderCompiled{true};
     Sampler2D sampler2DToSet;
     unsigned int textureIdToDelete;
 

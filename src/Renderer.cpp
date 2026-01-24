@@ -314,10 +314,10 @@ std::string Renderer::setShader(bool isContinuous,
     newShaderFragmentSource = fragmentSource;
     newShaderVertexSource = vertexSource;
     newShaderIsContinuous = isContinuous;
+    shaderCompiled = false;
     msg.push_back(MSG_NEW_SHADER);
-    if (loopRunning)
-        while (msg.back() == MSG_NEW_SHADER)
-            std::this_thread::yield();
+    while (!shaderCompiled)
+        std::this_thread::yield();
     return compileError;
 }
 
@@ -329,10 +329,10 @@ std::string Renderer::setShaderToy(const char *fragmentSource) {
     newShaderFragmentSource = fragmentSource;
     newShaderVertexSource = "";
     newShaderIsContinuous = true;
+    shaderCompiled = false;
     msg.push_back(MSG_NEW_SHADER);
-    if (loopRunning)
-        while (msg.size() > 0)
-            std::this_thread::yield();
+    while (!shaderCompiled)
+        std::this_thread::yield();
     return compileError;
 }
 
@@ -397,7 +397,7 @@ void Renderer::loop() {
                 #ifdef WITH_OPENCV
                     stopCapture();
                 #endif
-                
+
                 if (shader.get() != nullptr)
                     shader.reset();
                 shader = std::make_unique<Shader>(self);
@@ -409,6 +409,7 @@ void Renderer::loop() {
                     compileError = shader->initShaderToy();
                 else
                     compileError = shader->initShader();
+                shaderCompiled = true;
                 break;
 
             case MSG_START_CAPTURE_ON_UNIFORM:
