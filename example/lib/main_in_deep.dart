@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import 'game_menu/all_games.dart';
 import 'shadertoy.dart';
 import 'states.dart';
 import 'test_widget.dart';
@@ -74,6 +75,15 @@ class _TextureAndTabsState extends ConsumerState<TextureAndTabs> {
     }
   }
 
+  void _restartRenderer() {
+    final ffi = OpenGLController().openglFFI;
+    ffi.startThread();
+    final idx = ref.read(stateShaderIndex);
+    if (idx >= 0 && idx < shaderToy.length) {
+      ffi.setShaderToy(shaderToy[idx]['fragment']!);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final textureSize = ref.watch(stateTextureSize);
@@ -84,12 +94,14 @@ class _TextureAndTabsState extends ConsumerState<TextureAndTabs> {
       const Tab(text: 'edit shader'),
       if (!kIsWeb) const Tab(text: 'test 1'),
       if (!kIsWeb) const Tab(text: 'test 2'),
+      const Tab(text: 'games'),
     ];
     final tabViews = <Widget>[
       const Controls(),
       const EditShader(),
       if (!kIsWeb) const TestWidget(shaderToyCode: 'ls3cDB'),
       if (!kIsWeb) const TestWidget(shaderToyCode: 'XdXGR7'),
+      _GamesTab(onRestart: _restartRenderer),
     ];
 
     return DefaultTabController(
@@ -131,6 +143,43 @@ class _TextureAndTabsState extends ConsumerState<TextureAndTabs> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GamesTab extends StatelessWidget {
+  const _GamesTab({required this.onRestart});
+
+  final VoidCallback onRestart;
+
+  @override
+  Widget build(BuildContext context) {
+    final games = allGames();
+    return Padding(
+      padding: const EdgeInsets.only(top: 10),
+      child: Column(
+        children: games.map((entry) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: ElevatedButton(
+              onPressed: () {
+                OpenGLController().openglFFI.stopThread();
+                Navigator.of(context)
+                    .push(
+                      MaterialPageRoute(
+                        builder: (ctx) => Scaffold(
+                          appBar: AppBar(title: Text(entry.name)),
+                          body: entry.buildWidget(ctx),
+                        ),
+                      ),
+                    )
+                    .then((_) => onRestart());
+              },
+              child: Text(entry.name),
+            ),
+          );
+        }).toList(),
       ),
     );
   }

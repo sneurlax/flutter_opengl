@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'game_menu/all_games.dart';
 import 'main_in_deep.dart';
 
 void main() {
@@ -11,6 +12,41 @@ void main() {
       home: MyApp(),
     ),
   ));
+}
+
+class _GamesPage extends StatelessWidget {
+  const _GamesPage();
+
+  @override
+  Widget build(BuildContext context) {
+    final games = allGames();
+    return Scaffold(
+      appBar: AppBar(title: const Text('Mini Games')),
+      body: Padding(
+        padding: const EdgeInsets.only(top: 10),
+        child: Column(
+          children: games.map((entry) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (ctx) => Scaffold(
+                        appBar: AppBar(title: Text(entry.name)),
+                        body: entry.buildWidget(ctx),
+                      ),
+                    ),
+                  );
+                },
+                child: Text(entry.name),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -112,14 +148,31 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          OpenGLController().openglFFI.stopThread();
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => const TextureAndTabs()),
-          );
-        },
-        child: const Icon(Icons.explore),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'explore',
+            onPressed: () {
+              OpenGLController().openglFFI.stopThread();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const TextureAndTabs()),
+              );
+            },
+            child: const Icon(Icons.explore),
+          ),
+          const SizedBox(height: 16),
+          FloatingActionButton(
+            heroTag: 'games',
+            onPressed: () {
+              OpenGLController().openglFFI.stopThread();
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => const _GamesPage()),
+              );
+            },
+            child: const Icon(Icons.games),
+          ),
+        ],
       ),
     );
   }
