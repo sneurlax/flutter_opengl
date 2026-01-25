@@ -27,7 +27,7 @@ find_library(log-lib log)
 
 target_include_directories(${PLUGIN_NAME} PRIVATE
     ../src
-    src/glm
+    ../src/glm
 )
 
 set(LINK_LIBS

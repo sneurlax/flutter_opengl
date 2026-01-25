@@ -7,9 +7,7 @@ import '../states.dart';
 /// Texture radio button sizes to choose
 ///
 class TextureSize extends ConsumerWidget {
-  const TextureSize({
-    Key? key,
-  }) : super(key: key);
+  const TextureSize({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,7 +39,7 @@ class TextureSize extends ConsumerWidget {
                   Text(
                     '${textureSizes[n].width.toInt()} x '
                         '${textureSizes[n].height.toInt()}',
-                    textScaleFactor: 1.0,
+                    textScaler: TextScaler.linear(1.0),
                   ),
                   const SizedBox(width: 6),
                 ],

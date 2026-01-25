@@ -76,7 +76,7 @@ bool Renderer::setNativeAndroidWindow(jobject surface) {
 bool Renderer::initOpenGL() {
     const EGLint attribs[] = {
             EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
+            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES3_BIT,
             EGL_BLUE_SIZE, 8,
             EGL_GREEN_SIZE, 8,
             EGL_RED_SIZE, 8,
@@ -125,18 +125,8 @@ bool Renderer::initOpenGL() {
         return false;
     }
 
-    // can't get ES3 to work!
-    const EGLint attribs2[] = {
-            EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-            EGL_RENDERABLE_TYPE, EGL_OPENGL_ES2_BIT,
-            EGL_BLUE_SIZE, 8,
-            EGL_GREEN_SIZE, 8,
-            EGL_RED_SIZE, 8,
-            EGL_NONE
-    };
-    eglChooseConfig(display, attribs2, &config, 1, &numConfigs);
     const EGLint context_attribs[] = {
-            EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE
+            EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE
     };
     if (!(context = eglCreateContext(display, config, 0, context_attribs))) {
         eglPrintError("eglCreateContext()");
@@ -154,11 +144,11 @@ bool Renderer::initOpenGL() {
         return false;
     }
 
-    eglSwapInterval(self->display, 1);
-
     self->display = display;
     self->surface = surface;
     self->context = context;
+
+    eglSwapInterval(self->display, 1);
 
     return true;
 }
@@ -324,9 +314,10 @@ std::string Renderer::setShader(bool isContinuous,
     newShaderFragmentSource = fragmentSource;
     newShaderVertexSource = vertexSource;
     newShaderIsContinuous = isContinuous;
+    shaderCompiled = false;
     msg.push_back(MSG_NEW_SHADER);
-    if (loopRunning)
-        while (msg.back() == MSG_NEW_SHADER);
+    while (!shaderCompiled)
+        std::this_thread::yield();
     return compileError;
 }
 
@@ -338,9 +329,10 @@ std::string Renderer::setShaderToy(const char *fragmentSource) {
     newShaderFragmentSource = fragmentSource;
     newShaderVertexSource = "";
     newShaderIsContinuous = true;
+    shaderCompiled = false;
     msg.push_back(MSG_NEW_SHADER);
-    if (loopRunning)
-        while (msg.size() > 0 /* && msg.back() == MSG_NEW_SHADER*/);
+    while (!shaderCompiled)
+        std::this_thread::yield();
     return compileError;
 }
 
@@ -405,7 +397,7 @@ void Renderer::loop() {
                 #ifdef WITH_OPENCV
                     stopCapture();
                 #endif
-                
+
                 if (shader.get() != nullptr)
                     shader.reset();
                 shader = std::make_unique<Shader>(self);
@@ -417,6 +409,7 @@ void Renderer::loop() {
                     compileError = shader->initShaderToy();
                 else
                     compileError = shader->initShader();
+                shaderCompiled = true;
                 break;
 
             case MSG_START_CAPTURE_ON_UNIFORM:

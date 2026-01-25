@@ -1,11 +1,11 @@
 Pod::Spec.new do |s|
   s.name             = 'flutter_opengl'
-  s.version          = '0.10.0'
+  s.version          = '0.0.1'
   s.summary          = 'Flutter OpenGL plugin for iOS'
   s.description      = 'Flutter plugin to bind a Texture widget to an OpenGL ES context on iOS.'
   s.homepage         = 'https://github.com/alnitak/flutter_opengl'
-  s.license          = { :type => 'MIT', :file => '../LICENSE' }
-  s.author           = { 'alnitak' => '' }
+  s.license          = { :type => 'Apache-2.0', :file => '../LICENSE' }
+  s.author           = { 'alnitak' => 'marco.bavagnoli@gmail.com' }
   s.source           = { :path => '.' }
 
   s.platform = :ios, '12.0'

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'main_in_deep.dart';
 
 void main() {
   OpenGLController().initializeGL();
-  runApp(const MaterialApp(
-    home: MyApp(),
+  runApp(const ProviderScope(
+    child: MaterialApp(
+      home: MyApp(),
+    ),
   ));
 }
 
@@ -87,7 +92,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
           child: FutureBuilder(
             /// The surface size identifies the real texture size and
             /// it is not related to the above SizedBox size
-            future: OpenGLController().openglPlugin.createSurface(300, 200),
+            future: OpenGLController().openglFFI.createSurface(300, 200),
             builder: (_, snapshot) {
               if (snapshot.hasError || !snapshot.hasData) {
                 return const SizedBox.shrink();
@@ -106,6 +111,15 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
             },
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          OpenGLController().openglFFI.stopThread();
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const TextureAndTabs()),
+          );
+        },
+        child: const Icon(Icons.explore),
       ),
     );
   }

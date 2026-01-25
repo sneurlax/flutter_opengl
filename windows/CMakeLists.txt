@@ -6,7 +6,7 @@ cmake_minimum_required(VERSION 3.14)
 
 # Project-level configuration.
 set(PROJECT_NAME "flutter_opengl")
-project(${PROJECT_NAME} LANGUAGES CXX)
+project(${PROJECT_NAME} LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -14,8 +14,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # GLM is header-only, already bundled in src/glm (include the parent so <glm/glm.hpp> works)
 set(GLM ${CMAKE_CURRENT_LIST_DIR}/../src)
 
-# GLEW is bundled in windows/glew
-set(GLEW_DIR ${CMAKE_CURRENT_LIST_DIR}/glew)
+# Build GLEW from source (bundled in windows/glew)
+set(GLEW_DIR "${CMAKE_CURRENT_LIST_DIR}/glew")
+add_library(glew_s STATIC "${GLEW_DIR}/src/glew.c")
+target_include_directories(glew_s PUBLIC "${GLEW_DIR}/include")
+target_compile_definitions(glew_s PUBLIC GLEW_STATIC)
+target_link_libraries(glew_s PRIVATE opengl32)
 
 # This value is used when generating builds using this plugin, so it must
 # not be changed
@@ -59,9 +63,6 @@ target_compile_definitions(${PLUGIN_NAME} PRIVATE FLUTTER_PLUGIN_IMPL)
 # Don't treat warnings as compile errors in this plugin.
 target_compile_options(${PLUGIN_NAME} PRIVATE "/WX-")
 
-# Use static GLEW (no DLL needed)
-target_compile_definitions(${PLUGIN_NAME} PRIVATE GLEW_STATIC)
-
 # Source include directories and library dependencies. Add any plugin-specific
 # dependencies here.
 target_include_directories(${PLUGIN_NAME} INTERFACE
@@ -69,7 +70,6 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
 
 target_include_directories(${PLUGIN_NAME} PUBLIC
   "${GLM}"
-  "${GLEW_DIR}/include"
   )
 
 find_package(OpenGL REQUIRED)
@@ -78,7 +78,7 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
   flutter
   flutter_wrapper_plugin
   OpenGL::GL
-  "${GLEW_DIR}/lib/Release/x64/glew32s.lib"
+  glew_s
   )
 
 # List of absolute paths to libraries that should be bundled with the plugin.

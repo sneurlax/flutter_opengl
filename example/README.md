@@ -1,16 +1,34 @@
-# flutter_opengl_example
+# flutter_opengl example
 
-Demonstrates how to use the flutter_opengl plugin.
+Demonstrates real-time ShaderToy-compatible fragment shaders rendered via OpenGL
+on all supported Flutter platforms (Linux, Windows, macOS, Android, iOS, Web).
 
-## Getting Started
+## Running
 
-This project is a starting point for a Flutter application.
+### Simple demo (Star Nest shader)
 
-A few resources to get you started if this is your first Flutter project:
+```bash
+flutter run -d linux    # or chrome, windows, macos, android, ios
+```
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+Tap the floating action button to open the advanced view.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Advanced demo (shader explorer)
+
+```bash
+flutter run -t lib/main_in_deep.dart -d linux
+```
+
+The advanced view provides:
+
+- Shader switching between bundled ShaderToy examples
+- Live shader editor with hot-reload
+- iChannel texture inputs (image, video, camera)
+- Video capture of rendered output
+- Texture size controls and FPS display
+
+## Platform notes
+
+- Video capture and camera input require native platform support and are
+  unavailable on web.
+- Test tabs are hidden on web builds.

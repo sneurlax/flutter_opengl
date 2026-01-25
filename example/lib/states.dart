@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 /// FPS got when the renderer is started in controls.dart
 final stateFPS = StateProvider<double>((ref) => 0.0);
@@ -51,7 +51,7 @@ class TextureParams {
     bool? vFlip,
   }) {
     return TextureParams(
-      assetImage: assetsImage ?? this.assetImage,
+      assetImage: assetsImage ?? assetImage,
       filter: filter ?? this.filter,
       wrap: wrap ?? this.wrap,
       vFlip: vFlip ?? this.vFlip,

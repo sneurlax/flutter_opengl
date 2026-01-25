@@ -1,5 +1,6 @@
 import 'dart:js_interop';
 import 'dart:typed_data';
+import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/material.dart';
 import 'package:web/web.dart' as web;
@@ -323,10 +324,27 @@ void main() {
   }
 
   @override
-  bool startCaptureOnSampler2D(String name, String completeFilePath) => false;
+  bool startCaptureOnSampler2D(String name, String completeFilePath) {
+    throw UnsupportedError(
+        'startCaptureOnSampler2D is not supported on web.');
+  }
 
   @override
-  bool stopCapture() => false;
+  bool stopCapture() {
+    throw UnsupportedError('stopCapture is not supported on web.');
+  }
+
+  @override
+  Future<int> createSurface(int width, int height) async {
+    final canvas = createCanvas(width, height);
+
+    ui_web.platformViewRegistry.registerViewFactory(
+      viewType,
+      (int viewId, {Object? params}) => canvas,
+    );
+
+    return 0; // dummy texture ID; web uses HtmlElementView
+  }
 
   // ---- Private ----
 

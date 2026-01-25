@@ -10,9 +10,9 @@ class TestWidget extends StatelessWidget {
   final String shaderToyCode;
 
   const TestWidget({
-    Key? key,
+    super.key,
     required this.shaderToyCode,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

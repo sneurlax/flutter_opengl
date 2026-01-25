@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +9,7 @@ import '../states.dart';
 /// Row of 4 TextureWidget that represent the 4 iChannel[0-3]
 ///
 class TextureChooser extends ConsumerWidget {
-  const TextureChooser({
-    Key? key,
-  }) : super(key: key);
+  const TextureChooser({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -34,11 +33,11 @@ class TextureWidget extends ConsumerWidget {
   final double? height;
 
   const TextureWidget({
-    Key? key,
+    super.key,
     required this.channelId,
     this.width = 80,
     this.height = 80,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -109,7 +108,6 @@ class TextureWidget extends ConsumerWidget {
                       .openglFFI
                       .removeUniform('iChannel$channelId');
                   if (removed) {
-                    StateController<TextureParams> channelProvider;
                     _clearTexture(ref);
                   }
                 },
@@ -117,23 +115,22 @@ class TextureWidget extends ConsumerWidget {
               ),
             ),
 
-            /// STOP CAPTURE
-            /// since only once instance of capture is available for now
-            /// this is visible on all [TextureChooser]
-            Visibility(
-              visible: ref.watch(stateCaptureRunning),
-              child: Positioned(
-                left: 9,
-                bottom: 9,
-                child: GestureDetector(
-                  onTap: () {
-                    bool ret = OpenGLController().openglFFI.stopCapture();
-                    ref.read(stateCaptureRunning.notifier).state = false;
-                  },
-                  child: const Icon(Icons.stop_circle, size: 24),
+            /// STOP CAPTURE (not available on web)
+            if (!kIsWeb)
+              Visibility(
+                visible: ref.watch(stateCaptureRunning),
+                child: Positioned(
+                  left: 9,
+                  bottom: 9,
+                  child: GestureDetector(
+                    onTap: () {
+                      OpenGLController().openglFFI.stopCapture();
+                      ref.read(stateCaptureRunning.notifier).state = false;
+                    },
+                    child: const Icon(Icons.stop_circle, size: 24),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
         Text('iChannel$channelId'),
@@ -180,39 +177,40 @@ class TextureWidget extends ConsumerWidget {
           channelId: channelId,
           assetImage: 'assets/rgba-noise-small.png',
           text: '96x96'),
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: IconButton(
-              onPressed: () {
-                bool ret = OpenGLController().openglFFI.startCaptureOnSampler2D(
-                    'iChannel$channelId', ref.read(statePickedVideo));
-                ref.read(stateCaptureRunning.notifier).state = true;
-                _clearTexture(ref);
-              },
-              icon: const Icon(Icons.ondemand_video_outlined, size: 64),
+      if (!kIsWeb)
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: IconButton(
+                onPressed: () {
+                  OpenGLController().openglFFI.startCaptureOnSampler2D(
+                      'iChannel$channelId', ref.read(statePickedVideo));
+                  ref.read(stateCaptureRunning.notifier).state = true;
+                  _clearTexture(ref);
+                },
+                icon: const Icon(Icons.ondemand_video_outlined, size: 64),
+              ),
             ),
-          ),
-          const SizedBox(width: 30),
-          SizedBox(
-            width: 64,
-            height: 64,
-            child: IconButton(
-              onPressed: () {
-                bool ret = OpenGLController()
-                    .openglFFI
-                    .startCaptureOnSampler2D('iChannel$channelId', 'cam0');
-                ref.read(stateCaptureRunning.notifier).state = ret;
-                _clearTexture(ref);
-              },
-              icon: const Icon(Icons.camera, size: 64),
+            const SizedBox(width: 30),
+            SizedBox(
+              width: 64,
+              height: 64,
+              child: IconButton(
+                onPressed: () {
+                  bool started = OpenGLController()
+                      .openglFFI
+                      .startCaptureOnSampler2D('iChannel$channelId', 'cam0');
+                  ref.read(stateCaptureRunning.notifier).state = started;
+                  _clearTexture(ref);
+                },
+                icon: const Icon(Icons.camera, size: 64),
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
     ];
   }
 }
@@ -226,14 +224,14 @@ class Item extends ConsumerWidget {
   final String text;
 
   const Item({
-    Key? key,
+    super.key,
     required this.channelId,
     required this.assetImage,
     required this.text,
-  }) : super(key: key);
+  });
 
   _setTexture(AddMethod method, WidgetRef ref) {
-    var channelProvider;
+    StateController<TextureParams> channelProvider;
     switch (channelId) {
       case 0:
         channelProvider = ref.read(stateChannel0.notifier);

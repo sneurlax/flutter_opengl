@@ -1,6 +1,6 @@
 name: flutter_opengl
 description: Flutter plugin to bind a Texture widget to an OpenGL ES context. Many ShaderToy shaders can be used
-version: 0.10.0
+version: 0.0.1
 homepage: https://github.com/alnitak/flutter_opengl
 
 environment:
@@ -12,7 +12,6 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  plugin_platform_interface: ^2.1.8
 
   ffi: ^2.1.3
 

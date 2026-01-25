@@ -68,14 +68,12 @@ static void flutter_opengl_plugin_handle_method_call(
 		}
 		else
 		{
-			if (self->context != nullptr &&
-				self->myTexture != nullptr &&
-				self->myTexture->width == width &&
-				self->myTexture->height == height)
-			{
+				// Always clean up previous resources regardless of dimensions
+			if (getRenderer() != nullptr)
+				stopThread();
+
+			if (self->texture != nullptr && self->texture_registrar != nullptr) {
 				fl_texture_registrar_unregister_texture(self->texture_registrar, self->texture);
-				if (getRenderer() != nullptr)
-					stopThread();
 			}
 
 			GdkWindow *window = nullptr;

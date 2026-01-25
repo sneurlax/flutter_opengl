@@ -1,12 +1,13 @@
 import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_opengl/flutter_opengl.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../states.dart';
-import 'ShaderButtons.dart';
+import 'shader_buttons.dart';
 import 'texture_chooser.dart';
 import 'texture_sizes.dart';
 
@@ -14,15 +15,24 @@ import 'texture_sizes.dart';
 /// - create the texture id and use it in the Texture() widget
 /// - start/stop renderer
 /// - choose shader samples
-class Controls extends ConsumerWidget {
-  Controls({
-    Key? key,
-  }) : super(key: key);
+class Controls extends ConsumerStatefulWidget {
+  const Controls({super.key});
 
+  @override
+  ConsumerState<Controls> createState() => _ControlsState();
+}
+
+class _ControlsState extends ConsumerState<Controls> {
   Timer? fpsTimer;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  void dispose() {
+    fpsTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final textureCreated = ref.watch(stateTextureCreated);
 
     return SingleChildScrollView(
@@ -30,19 +40,21 @@ class Controls extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           /// CREATE TEXTURE
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 4,
             children: [
               ElevatedButton(
                 style: ButtonStyle(
                   backgroundColor: textureCreated
-                      ? const MaterialStatePropertyAll(Colors.green)
-                      : const MaterialStatePropertyAll(Colors.red),
+                      ? const WidgetStatePropertyAll(Colors.green)
+                      : const WidgetStatePropertyAll(Colors.red),
                 ),
                 onPressed: () async {
                   fpsTimer?.cancel();
                   Size textureSize = ref.read(stateTextureSize);
-                  int id = await OpenGLController().openglPlugin.createSurface(
+                  int id = await OpenGLController().openglFFI.createSurface(
                         textureSize.width.toInt(),
                         textureSize.height.toInt(),
                       );
@@ -52,8 +64,6 @@ class Controls extends ConsumerWidget {
                 },
                 child: const Text('create texture'),
               ),
-
-              const SizedBox(width: 16),
 
               /// START
               ElevatedButton(
@@ -68,7 +78,6 @@ class Controls extends ConsumerWidget {
                 },
                 child: const Text('start'),
               ),
-              const SizedBox(width: 8),
 
               /// STOP
               ElevatedButton(
@@ -81,25 +90,22 @@ class Controls extends ConsumerWidget {
                 child: const Text('stop'),
               ),
 
-              const SizedBox(width: 16),
+              /// PICK VIDEO FILE (not available on web)
+              if (!kIsWeb)
+                ElevatedButton(
+                  onPressed: () async {
+                    FilePickerResult? result =
+                        await FilePicker.platform.pickFiles(
+                          type: FileType.video,
+                        );
 
-              /// PICK VIDEO FILE
-              ElevatedButton(
-                onPressed: () async {
-                  FilePickerResult? result =
-                      await FilePicker.platform.pickFiles(
-                        type: FileType.video,
-                      );
-
-                  if (result != null) {
-                    ref.read(statePickedVideo.notifier).state =
-                        result.files.single.path!;
-                  } else {
-                    // User canceled the picker
-                  }
-                },
-                child: const Text('pick a\nvideo'),
-              ),
+                    if (result != null) {
+                      ref.read(statePickedVideo.notifier).state =
+                          result.files.single.path!;
+                    }
+                  },
+                  child: const Text('pick a\nvideo'),
+                ),
             ],
           ),
           const SizedBox(height: 10),
