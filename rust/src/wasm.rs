@@ -50,17 +50,7 @@ impl WasmRenderer {
     // -- Construction --
 
     #[wasm_bindgen(constructor)]
-    pub fn new(canvas_id: &str, width: u32, height: u32) -> Result<WasmRenderer, JsValue> {
-        let document = web_sys::window()
-            .ok_or_else(|| JsValue::from_str("no global window"))?
-            .document()
-            .ok_or_else(|| JsValue::from_str("no document"))?;
-
-        let canvas: HtmlCanvasElement = document
-            .get_element_by_id(canvas_id)
-            .ok_or_else(|| JsValue::from_str(&format!("canvas '{}' not found", canvas_id)))?
-            .dyn_into::<HtmlCanvasElement>()
-            .map_err(|_| JsValue::from_str("element is not an HtmlCanvasElement"))?;
+    pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> Result<WasmRenderer, JsValue> {
 
         let webgl2_ctx: WebGl2RenderingContext = canvas
             .get_context("webgl2")?
@@ -597,10 +587,28 @@ impl WasmRenderer {
         height: i32,
         data: &[u8],
     ) -> bool {
-        match self.shader.as_mut() {
-            Some(s) => s.uniforms_mut().replace_sampler2d(name, width, height, data),
-            None => false,
+        let s = match self.shader.as_mut() {
+            Some(s) => s,
+            None => return false,
+        };
+
+        if !s.uniforms_mut().replace_sampler2d(name, width, height, data) {
+            return false;
         }
+
+        // Re-upload the texture to GPU — replace_sampler2d only updates
+        // CPU data, and set_all_sampler2d skips already-assigned samplers.
+        let gl = self.create_glow_context();
+        if let Some(ref mut s) = self.shader {
+            if let Some(sampler) = s.uniforms_mut().get_sampler2d(name) {
+                let n = sampler.n_texture;
+                if n != -1 {
+                    sampler.gen_texture(&gl, n);
+                }
+            }
+        }
+
+        true
     }
 
     // -- Frame rendering --

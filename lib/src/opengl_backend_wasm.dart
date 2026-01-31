@@ -18,7 +18,7 @@ external JSPromise<JSAny?> _wasmInit();
 
 @JS('__flutter_opengl_WasmRenderer')
 extension type _WasmRenderer._(JSObject _) implements JSObject {
-  external factory _WasmRenderer(JSString canvasId, JSNumber width, JSNumber height);
+  external factory _WasmRenderer(web.HTMLCanvasElement canvas, JSNumber width, JSNumber height);
   external void free();
 
   // Lifecycle
@@ -113,7 +113,6 @@ class WasmBackend implements OpenGLBackend {
   int _height = 0;
   bool _running = false;
   int _animFrameId = 0;
-  String _canvasId = '';
 
   String get viewType => 'flutter_opengl_wasm_$hashCode';
 
@@ -393,10 +392,8 @@ class WasmBackend implements OpenGLBackend {
 
     _width = width;
     _height = height;
-    _canvasId = 'flutter_opengl_canvas_$hashCode';
 
     final canvas = web.HTMLCanvasElement()
-      ..id = _canvasId
       ..width = width
       ..height = height
       ..style.width = '100%'
@@ -407,38 +404,15 @@ class WasmBackend implements OpenGLBackend {
       (int viewId, {Object? params}) => canvas,
     );
 
-    // Create the WasmRenderer once the canvas is in the DOM.
-    // We defer construction until the first frame callback, since the canvas
-    // must be attached to the DOM for getElementById to find it.
-    // Instead, we attach it now and construct immediately via the element ref.
-    // Actually, wasm-bindgen WasmRenderer::new does getElementById, so we need
-    // the canvas in the DOM. We'll construct it lazily in startThread.
-    // For now, store the canvas reference.
-    _deferredCanvas = canvas;
+    // Create the WasmRenderer immediately — the constructor now accepts
+    // the canvas element directly, so it doesn't need to be in the DOM.
+    _renderer = _WasmRenderer(canvas, _width.toJS, _height.toJS);
 
     return 0;
   }
 
-  web.HTMLCanvasElement? _deferredCanvas;
-
-  void _ensureRenderer() {
-    if (_renderer != null || _deferredCanvas == null) return;
-
-    // The canvas should be in the DOM by now (HtmlElementView attached it).
-    // WasmRenderer::new uses document.getElementById, so verify the canvas
-    // has our ID set.
-    try {
-      _renderer = _WasmRenderer(_canvasId.toJS, _width.toJS, _height.toJS);
-      _deferredCanvas = null;
-    } catch (e) {
-      // Canvas not yet in DOM — will retry on next startThread call.
-      debugPrint('WasmBackend: deferred renderer init: $e');
-    }
-  }
-
   @override
   void startThread() {
-    _ensureRenderer();
     if (_running || _renderer == null) return;
     _running = true;
     _renderer!.start();
