@@ -1,12 +1,11 @@
 #import "FlutterOpenglPlugin.h"
 #import "FlutterOpenglTexture.h"
+#import "macos_bridge.h"
 
 #include <OpenGL/gl3.h>
 #include <OpenGL/OpenGL.h>
-#include <iostream>
 
-#include "../../src/ffi.h"
-#include "../../src/common.h"
+static MacOSBridgeData bridge_data = { NULL, nil, nil, 0 };
 
 @interface FlutterOpenglPlugin ()
 @property (nonatomic, strong) NSObject<FlutterTextureRegistry> *textureRegistry;
@@ -64,7 +63,7 @@
     if (_myTexture != nil) {
         [_textureRegistry unregisterTexture:_flutterTextureId];
         _myTexture = nil;
-        if (getRenderer() != nullptr)
+        if (getRenderer() != NULL)
             stopThread();
     }
 
@@ -84,7 +83,7 @@
     if (err != kCGLNoError || numPixelFormats == 0) {
         NSString *msg = [NSString stringWithFormat:@"CGLChoosePixelFormat failed: %s",
                          CGLErrorString(err)];
-        std::cout << [msg UTF8String] << std::endl;
+        NSLog(@"%@", msg);
         result([FlutterError errorWithCode:@"101" message:msg details:nil]);
         return;
     }
@@ -93,7 +92,7 @@
     if (err != kCGLNoError) {
         NSString *msg = [NSString stringWithFormat:@"CGLCreateContext failed: %s",
                          CGLErrorString(err)];
-        std::cout << [msg UTF8String] << std::endl;
+        NSLog(@"%@", msg);
         result([FlutterError errorWithCode:@"101" message:msg details:nil]);
         return;
     }
@@ -115,16 +114,15 @@
 
     CGLSetCurrentContext(NULL);
 
-    // Set up the context struct for the shared C++ renderer
-    ctx_f.cglContext = _cglContext;
-    ctx_f.texture_name = _textureName;
-    ctx_f.textureRegistry = (__bridge void *)_textureRegistry;
-    ctx_f.myTexture = (__bridge void *)_myTexture;
-    ctx_f.flutterTextureId = _flutterTextureId;
-    ctx_f.width = width;
-    ctx_f.height = height;
+    // Populate the bridge data for Rust callbacks
+    bridge_data.cgl_context        = _cglContext;
+    bridge_data.texture_registry   = _textureRegistry;
+    bridge_data.my_texture         = _myTexture;
+    bridge_data.flutter_texture_id = _flutterTextureId;
 
-    createRenderer(&ctx_f);
+    PlatformContext ctx = macos_create_platform_context(
+        &bridge_data, width, height, _textureName);
+    createRenderer(&ctx);
 
     result(@(_flutterTextureId));
 }

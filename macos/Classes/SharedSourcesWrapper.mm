@@ -1,9 +1,5 @@
-// This file includes all shared C++ source files from ../src/ so they
-// are compiled as part of the CocoaPods target. CocoaPods has difficulty
-// compiling .cpp files from outside the pod's source directory.
-
-#include "../../src/ffi.cpp"
-#include "../../src/Renderer.cpp"
-#include "../../src/Shader.cpp"
-#include "../../src/uniformQueue.cpp"
-#include "../../src/Sampler2D.cpp"
+// This file is intentionally empty.
+//
+// Previously it included all shared C++ source files from ../src/.
+// The rendering engine has been rewritten in Rust; the Rust shared library
+// (libflutter_opengl_rust.dylib) is now linked directly via the podspec.
