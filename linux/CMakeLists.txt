@@ -26,13 +26,11 @@ endif()
 set(RUST_LIB_DIR "${RUST_DIR}/target/${RUST_PROFILE}")
 set(RUST_LIB_PATH "${RUST_LIB_DIR}/lib${RUST_LIB_NAME}.so")
 
-add_custom_command(
-  OUTPUT ${RUST_LIB_PATH}
+add_custom_target(rust_lib ALL
   COMMAND cargo build ${CARGO_BUILD_FLAGS}
   WORKING_DIRECTORY ${RUST_DIR}
   COMMENT "Building Rust library (${RUST_PROFILE})"
 )
-add_custom_target(rust_lib ALL DEPENDS ${RUST_LIB_PATH})
 
 # Import the Rust shared library as a CMake target
 add_library(${RUST_LIB_NAME} SHARED IMPORTED)

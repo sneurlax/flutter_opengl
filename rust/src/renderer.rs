@@ -484,6 +484,14 @@ fn apply_uniform_ops(shader: &mut Shader, ops: &mut Vec<UniformOp>, loop_gl: &gl
             }
             UniformOp::ReplaceSampler2D { name, width, height, data } => {
                 shader.uniforms_mut().replace_sampler2d(&name, width, height, &data);
+                // Re-upload the texture to GPU — replace_texture only updates
+                // CPU data, and set_all_sampler2d skips already-assigned samplers.
+                if let Some(sampler) = shader.uniforms_mut().get_sampler2d(&name) {
+                    let n = sampler.n_texture;
+                    if n != -1 {
+                        sampler.gen_texture(loop_gl, n);
+                    }
+                }
             }
             UniformOp::NewTexture => {
                 shader.uniforms_mut().set_all_sampler2d(loop_gl);
@@ -668,11 +676,15 @@ fn render_loop(shared: Arc<SharedState>) {
                 };
 
                 // Apply any pending uniform operations from the FFI thread.
+                // Some ops (AddSampler2D, ReplaceSampler2D, NewTexture) need
+                // an active GL context for texture uploads.
                 {
                     let mut ops =
                         shared.pending_uniform_ops.lock().unwrap();
                     if !ops.is_empty() {
+                        platform.make_current();
                         apply_uniform_ops(s, &mut ops, &loop_gl);
+                        platform.clear_context();
                     }
                 }
 
@@ -686,11 +698,6 @@ fn render_loop(shared: Arc<SharedState>) {
                     frames += 1;
                     s.draw_frame(&platform);
                     start_draw = Instant::now();
-
-                    unsafe {
-                        s.gl().flush();
-                        s.gl().finish();
-                    }
                 }
 
                 // Update reported frame-rate roughly once per second.
