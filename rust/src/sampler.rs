@@ -4,7 +4,7 @@ pub struct Sampler2D {
     pub width: i32,
     pub height: i32,
     pub data: Vec<u8>,
-    pub texture: Option<glow::NativeTexture>,
+    pub texture: Option<glow::Texture>,
     pub n_texture: i32,
 }
 

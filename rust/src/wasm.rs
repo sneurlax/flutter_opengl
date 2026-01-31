@@ -39,8 +39,8 @@ fn performance_now() -> f64 {
 pub struct WasmRenderer {
     webgl2_ctx: WebGl2RenderingContext,
     shader: Option<Shader>,
-    vao: Option<glow::NativeVertexArray>,
-    vbo: Option<glow::NativeBuffer>,
+    vao: Option<glow::VertexArray>,
+    vbo: Option<glow::Buffer>,
     canvas: HtmlCanvasElement,
     width: i32,
     height: i32,
@@ -574,12 +574,11 @@ impl WasmRenderer {
     #[wasm_bindgen]
     pub fn remove_uniform(&mut self, name: &str) -> bool {
         let running = self.running;
+        // Create the glow context before borrowing self.shader mutably to
+        // avoid overlapping borrows of `self`.
+        let gl = self.create_glow_context();
         match self.shader.as_mut() {
             Some(s) => {
-                // We need a separate glow context reference for the delete call
-                // because Shader owns one and we cannot borrow both &gl and
-                // &mut uniforms from the same Shader simultaneously.
-                let gl = self.create_glow_context();
                 s.uniforms_mut().remove_uniform(name, &gl, running)
             }
             None => false,

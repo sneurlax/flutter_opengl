@@ -1,5 +1,6 @@
 use glow::HasContext;
 
+#[cfg(not(target_arch = "wasm32"))]
 use crate::platform::PlatformContext;
 use crate::sampler::Sampler2D;
 use crate::uniform::{UniformQueue, UniformType};
@@ -15,13 +16,16 @@ const QUAD_VERTICES: [f32; 18] = [
 
 pub struct Shader {
     gl: glow::Context,
-    program: Option<glow::NativeProgram>,
-    vao: Option<glow::NativeVertexArray>,
-    vbo: Option<glow::NativeBuffer>,
-    fbo: Option<glow::NativeFramebuffer>,
+    program: Option<glow::Program>,
+    vao: Option<glow::VertexArray>,
+    vbo: Option<glow::Buffer>,
+    fbo: Option<glow::Framebuffer>,
     width: i32,
     height: i32,
+    #[cfg(not(target_arch = "wasm32"))]
     start_instant: Option<std::time::Instant>,
+    #[cfg(target_arch = "wasm32")]
+    start_instant: Option<()>,
     is_continuous: bool,
     uniforms: UniformQueue,
     vertex_source: String,
@@ -106,7 +110,7 @@ impl Shader {
         &self.gl
     }
 
-    pub fn program(&self) -> Option<glow::NativeProgram> {
+    pub fn program(&self) -> Option<glow::Program> {
         self.program
     }
 
@@ -138,8 +142,12 @@ impl Shader {
 
         if let Some(prog) = self.program {
             self.uniforms.set_program(prog);
-            self.start_instant = Some(std::time::Instant::now());
+            #[cfg(not(target_arch = "wasm32"))]
+            { self.start_instant = Some(std::time::Instant::now()); }
+            #[cfg(target_arch = "wasm32")]
+            { self.start_instant = Some(()); }
 
+            #[cfg(not(target_arch = "wasm32"))]
             if self.uses_fbo {
                 let vao = unsafe { self.gl.create_vertex_array().unwrap() };
                 let vbo = unsafe { self.gl.create_buffer().unwrap() };
@@ -162,7 +170,8 @@ impl Shader {
 
                     self.gl.bind_vertex_array(None);
 
-                    self.gl.bind_texture(glow::TEXTURE_2D, Some(glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap())));
+                    let native_tex = glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap());
+                    self.gl.bind_texture(glow::TEXTURE_2D, Some(native_tex));
                     self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
                     self.gl.tex_image_2d(
                         glow::TEXTURE_2D,
@@ -282,7 +291,7 @@ impl Shader {
         self.init_shader()
     }
 
-    fn load_shader(&mut self, shader_type: u32, source: &str) -> Option<glow::NativeShader> {
+    fn load_shader(&mut self, shader_type: u32, source: &str) -> Option<glow::Shader> {
         unsafe {
             let shader = self.gl.create_shader(shader_type).ok()?;
             self.gl.shader_source(shader, source);
@@ -304,7 +313,7 @@ impl Shader {
         }
     }
 
-    fn create_program(&mut self, vertex_src: &str, fragment_src: &str) -> Option<glow::NativeProgram> {
+    fn create_program(&mut self, vertex_src: &str, fragment_src: &str) -> Option<glow::Program> {
         let vertex_shader = self.load_shader(glow::VERTEX_SHADER, vertex_src)?;
         let fragment_shader = self.load_shader(glow::FRAGMENT_SHADER, fragment_src)?;
 
@@ -331,6 +340,7 @@ impl Shader {
         }
     }
 
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn draw_frame(&mut self, platform: &PlatformContext) {
         let program = match self.program {
             Some(p) => p,

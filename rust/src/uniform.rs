@@ -53,7 +53,7 @@ pub enum UniformValue {
 
 pub struct UniformQueue {
     uniforms: BTreeMap<String, UniformValue>,
-    program: Option<glow::NativeProgram>,
+    program: Option<glow::Program>,
 }
 
 impl UniformQueue {
@@ -64,7 +64,7 @@ impl UniformQueue {
         }
     }
 
-    pub fn set_program(&mut self, program: glow::NativeProgram) {
+    pub fn set_program(&mut self, program: glow::Program) {
         self.program = Some(program);
     }
 
