@@ -1,0 +1,1 @@
+../../web/flutter_opengl_wasm_bootstrap.js

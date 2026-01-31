@@ -1,5 +1,5 @@
 import 'opengl_backend.dart';
-import 'opengl_backend_web.dart';
+import 'opengl_backend_wasm.dart';
 
 class OpenGLController {
   static OpenGLController? _instance;
@@ -10,11 +10,11 @@ class OpenGLController {
 
   late final OpenGLBackend openglFFI;
 
-  final WebGLBackend _webBackend = WebGLBackend();
+  final WasmBackend _wasmBackend = WasmBackend();
 
   void initializeGL() {
-    openglFFI = _webBackend;
+    openglFFI = _wasmBackend;
   }
 
-  WebGLBackend get webBackend => _webBackend;
+  WasmBackend get webBackend => _wasmBackend;
 }

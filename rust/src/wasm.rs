@@ -24,17 +24,8 @@ fn performance_now() -> f64 {
         .now()
 }
 
-/// Renderer for the WASM/WebGL2 platform.
-///
-/// This is the web equivalent of the native `Renderer` + render-thread design.
-/// Because WASM is single-threaded we store state directly and rely on the JS
-/// side to drive the render loop via `requestAnimationFrame` calling
-/// `render_frame()` each frame.
-///
-/// The `Shader` is created with `uses_fbo = false` so it skips FBO/texture
-/// setup during `init_shader`. The WasmRenderer manages its own VAO/VBO for
-/// the fullscreen quad and drives GL draw calls directly in `render_frame`,
-/// bypassing `Shader::draw_frame` (which requires a `PlatformContext`).
+/// WebGL2/WASM renderer. Single-threaded; JS drives the loop via
+/// `requestAnimationFrame` → `render_frame()`.
 #[wasm_bindgen]
 pub struct WasmRenderer {
     webgl2_ctx: WebGl2RenderingContext,
@@ -56,13 +47,8 @@ pub struct WasmRenderer {
 
 #[wasm_bindgen]
 impl WasmRenderer {
-    // -----------------------------------------------------------------------
-    // Construction
-    // -----------------------------------------------------------------------
+    // -- Construction --
 
-    /// Create a new `WasmRenderer` bound to the canvas element with the given
-    /// `canvas_id`. The WebGL2 context is obtained from the canvas and a
-    /// `glow::Context` is created on top of it.
     #[wasm_bindgen(constructor)]
     pub fn new(canvas_id: &str, width: u32, height: u32) -> Result<WasmRenderer, JsValue> {
         let document = web_sys::window()
@@ -103,16 +89,12 @@ impl WasmRenderer {
         })
     }
 
-    // -----------------------------------------------------------------------
-    // Helper: create a fresh glow::Context from our stored WebGL2 context
-    // -----------------------------------------------------------------------
+    // -- glow context --
 
     fn create_glow_context(&self) -> glow::Context {
         glow::Context::from_webgl2_context(self.webgl2_ctx.clone())
     }
 
-    /// Set up the fullscreen-quad VAO/VBO using the given glow context.
-    /// Must be called after a shader is successfully compiled.
     fn setup_quad_geometry(&mut self) {
         let s = match self.shader.as_ref() {
             Some(s) => s,
@@ -164,9 +146,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Status / getters
-    // -----------------------------------------------------------------------
+    // -- Getters --
 
     #[wasm_bindgen]
     pub fn renderer_status(&self) -> bool {
@@ -204,9 +184,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Render loop control
-    // -----------------------------------------------------------------------
+    // -- Render loop control --
 
     /// Mark the renderer as running. The JS side should start calling
     /// `render_frame()` via `requestAnimationFrame` after this.
@@ -226,9 +204,7 @@ impl WasmRenderer {
         self.animation_frame_id = 0;
     }
 
-    // -----------------------------------------------------------------------
-    // Shader compilation
-    // -----------------------------------------------------------------------
+    // -- Shader compilation --
 
     /// Compile and link a custom vertex + fragment shader pair.
     /// Returns an empty string on success, or the compile/link error.
@@ -289,9 +265,7 @@ impl WasmRenderer {
         error
     }
 
-    // -----------------------------------------------------------------------
-    // ShaderToy helpers
-    // -----------------------------------------------------------------------
+    // -- ShaderToy --
 
     #[wasm_bindgen]
     pub fn add_shader_toy_uniforms(&mut self) {
@@ -311,9 +285,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Uniform add helpers
-    // -----------------------------------------------------------------------
+    // -- Add uniforms --
 
     #[wasm_bindgen]
     pub fn add_bool_uniform(&mut self, name: &str, val: bool) -> bool {
@@ -442,9 +414,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Uniform set helpers (update existing uniform value)
-    // -----------------------------------------------------------------------
+    // -- Set uniforms --
 
     #[wasm_bindgen]
     pub fn set_bool_uniform(&mut self, name: &str, val: bool) -> bool {
@@ -567,9 +537,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Uniform removal
-    // -----------------------------------------------------------------------
+    // -- Remove uniforms --
 
     #[wasm_bindgen]
     pub fn remove_uniform(&mut self, name: &str) -> bool {
@@ -585,9 +553,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Sampler2D uniforms
-    // -----------------------------------------------------------------------
+    // -- Sampler2D --
 
     #[wasm_bindgen]
     pub fn add_sampler2d_uniform(
@@ -637,9 +603,7 @@ impl WasmRenderer {
         }
     }
 
-    // -----------------------------------------------------------------------
-    // Frame rendering
-    // -----------------------------------------------------------------------
+    // -- Frame rendering --
 
     /// Render a single frame. This is intended to be called from the JS
     /// `requestAnimationFrame` callback.
