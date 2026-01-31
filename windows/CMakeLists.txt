@@ -11,15 +11,51 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# GLM is header-only, already bundled in src/glm (include the parent so <glm/glm.hpp> works)
-set(GLM ${CMAKE_CURRENT_LIST_DIR}/../src)
-
 # Build GLEW from source (bundled in windows/glew)
 set(GLEW_DIR "${CMAKE_CURRENT_LIST_DIR}/glew")
 add_library(glew_s STATIC "${GLEW_DIR}/src/glew.c")
 target_include_directories(glew_s PUBLIC "${GLEW_DIR}/include")
 target_compile_definitions(glew_s PUBLIC GLEW_STATIC)
 target_link_libraries(glew_s PRIVATE opengl32)
+
+# -----------------------------------------------------------------------
+# Build the Rust shared library via cargo
+# -----------------------------------------------------------------------
+set(RUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../rust")
+set(RUST_LIB_NAME "flutter_opengl_rust")
+
+# Determine Rust build profile and output directory
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(RUST_PROFILE "release")
+  set(CARGO_BUILD_FLAGS --release)
+else()
+  set(RUST_PROFILE "debug")
+  set(CARGO_BUILD_FLAGS "")
+endif()
+
+set(RUST_LIB_DIR "${RUST_DIR}/target/${RUST_PROFILE}")
+set(RUST_DLL_PATH "${RUST_LIB_DIR}/${RUST_LIB_NAME}.dll")
+set(RUST_IMPLIB_PATH "${RUST_LIB_DIR}/${RUST_LIB_NAME}.dll.lib")
+
+add_custom_command(
+  OUTPUT ${RUST_DLL_PATH}
+  COMMAND cargo build ${CARGO_BUILD_FLAGS}
+  WORKING_DIRECTORY ${RUST_DIR}
+  COMMENT "Building Rust library (${RUST_PROFILE})"
+)
+add_custom_target(rust_lib ALL DEPENDS ${RUST_DLL_PATH})
+
+# Import the Rust shared library as a CMake target
+add_library(${RUST_LIB_NAME} SHARED IMPORTED)
+set_target_properties(${RUST_LIB_NAME} PROPERTIES
+  IMPORTED_LOCATION ${RUST_DLL_PATH}
+  IMPORTED_IMPLIB ${RUST_IMPLIB_PATH}
+)
+add_dependencies(${RUST_LIB_NAME} rust_lib)
+
+# -----------------------------------------------------------------------
+# Plugin sources (no more C++ engine sources)
+# -----------------------------------------------------------------------
 
 # This value is used when generating builds using this plugin, so it must
 # not be changed
@@ -30,14 +66,6 @@ list(APPEND PLUGIN_SOURCES
   "flutter_opengl_plugin.cpp"
   "flutter_opengl_plugin.h"
   "fl_my_texture_gl.cc"
-
-  ../src/common.h
-  ../src/ffi.cpp
-  ../src/Renderer.cpp
-  ../src/Shader.cpp
-  ../src/Sampler2D.cpp
-  ../src/uniformQueue.cpp
-  ../src/opencv_capture.cpp
 )
 
 # Define the plugin library target. Its name must not be changed (see comment
@@ -68,10 +96,6 @@ target_compile_options(${PLUGIN_NAME} PRIVATE "/WX-")
 target_include_directories(${PLUGIN_NAME} INTERFACE
   "${CMAKE_CURRENT_SOURCE_DIR}/include")
 
-target_include_directories(${PLUGIN_NAME} PUBLIC
-  "${GLM}"
-  )
-
 find_package(OpenGL REQUIRED)
 
 target_link_libraries(${PLUGIN_NAME} PRIVATE
@@ -79,11 +103,12 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
   flutter_wrapper_plugin
   OpenGL::GL
   glew_s
+  ${RUST_LIB_NAME}
   )
 
-# List of absolute paths to libraries that should be bundled with the plugin.
-# No extra DLLs needed when using static GLEW.
+# Bundle the Rust .dll with the Flutter application so it ends up next to
+# the executable at runtime.
 set(flutter_opengl_bundled_libraries
-  ""
+  "${RUST_DLL_PATH}"
   PARENT_SCOPE
 )
