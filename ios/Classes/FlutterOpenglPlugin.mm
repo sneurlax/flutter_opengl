@@ -1,12 +1,8 @@
 #import "FlutterOpenglPlugin.h"
 #import "FlutterOpenglTexture.h"
+#import "ios_bridge.h"
 
-#include <OpenGLES/ES3/gl.h>
-#include <OpenGLES/ES3/glext.h>
-#include <iostream>
-
-#include "../../src/ffi.h"
-#include "../../src/common.h"
+static IOSBridgeData g_bridge_data;
 
 @interface FlutterOpenglPlugin ()
 @property (nonatomic, strong) NSObject<FlutterTextureRegistry> *textureRegistry;
@@ -63,7 +59,7 @@
     if (_myTexture != nil) {
         [_textureRegistry unregisterTexture:_flutterTextureId];
         _myTexture = nil;
-        if (getRenderer() != nullptr)
+        if (getRenderer() != NULL)
             stopThread();
     }
 
@@ -93,16 +89,16 @@
 
     [EAGLContext setCurrentContext:nil];
 
-    // Set up the context struct for the shared C++ renderer
-    ctx_f.eaglContext = (__bridge void *)_eaglContext;
-    ctx_f.texture_name = _textureName;
-    ctx_f.textureRegistry = (__bridge void *)_textureRegistry;
-    ctx_f.myTexture = (__bridge void *)_myTexture;
-    ctx_f.flutterTextureId = _flutterTextureId;
-    ctx_f.width = width;
-    ctx_f.height = height;
+    // Populate the bridge data struct for Rust callbacks
+    g_bridge_data.eagl_context       = (__bridge void *)_eaglContext;
+    g_bridge_data.texture_registry   = (__bridge void *)_textureRegistry;
+    g_bridge_data.my_texture         = (__bridge void *)_myTexture;
+    g_bridge_data.flutter_texture_id = _flutterTextureId;
 
-    createRenderer(&ctx_f);
+    // Create the PlatformContext and pass it to the Rust renderer
+    PlatformContext platformCtx = ios_create_platform_context(
+        &g_bridge_data, width, height, _textureName);
+    createRenderer(&platformCtx);
 
     result(@(_flutterTextureId));
 }

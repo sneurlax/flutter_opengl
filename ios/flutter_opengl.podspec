@@ -11,24 +11,41 @@ Pod::Spec.new do |s|
   s.platform = :ios, '12.0'
   s.ios.deployment_target = '12.0'
 
-  # Plugin Obj-C++ sources (SharedSourcesWrapper.mm #includes the C++ files)
+  # Plugin Obj-C++ sources (no more C++ engine sources -- Rust handles rendering)
   s.source_files = 'Classes/**/*.{h,mm,m}'
   s.public_header_files = 'Classes/FlutterOpenglPlugin.h'
 
-  # Keep src/ headers accessible but don't try to compile them directly
-  s.preserve_paths = '../src/**/*'
+  # Keep the Rust source and build script accessible
+  s.preserve_paths = '../rust/**/*', 'build_rust.sh'
+
+  # Build the Rust static library before compiling the plugin
+  s.script_phase = {
+    :name => 'Build Rust Library',
+    :script => '"${PODS_TARGET_SRCROOT}/build_rust.sh"',
+    :execution_position => :before_compile,
+    :shell_path => '/bin/bash',
+  }
+
+  # Determine the Rust output directory based on build configuration
+  # The build_rust.sh script places the universal library here.
+  rust_lib_dir = '${PODS_TARGET_SRCROOT}/../rust/target/ios-universal'
 
   s.pod_target_xcconfig = {
-    'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17',
-    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) _IS_IOS_=1 GL_SILENCE_DEPRECATION=1',
-    'HEADER_SEARCH_PATHS' => '$(inherited) "$(PODS_TARGET_SRCROOT)/../src" "$(PODS_TARGET_SRCROOT)/../src/glm"',
-    'OTHER_CPLUSPLUSFLAGS' => '$(inherited) -std=c++17',
-    # Suppress warnings from third-party GLM headers and legacy OpenGL deprecation
-    'GCC_WARN_INHIBIT_ALL_WARNINGS' => 'YES',
-    'CLANG_WARN_DOCUMENTATION_COMMENTS' => 'NO',
+    'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) GL_SILENCE_DEPRECATION=1',
+    # Link against the Rust static library
+    'OTHER_LDFLAGS' => '$(inherited) -L"' + rust_lib_dir + '/$(CONFIGURATION)" -lflutter_opengl_rust',
+    'LIBRARY_SEARCH_PATHS' => '$(inherited) "' + rust_lib_dir + '/$(CONFIGURATION)"',
+    # Suppress deprecation warnings for OpenGL ES
     'GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS' => 'NO',
   }
 
   s.dependency 'Flutter'
   s.frameworks = 'OpenGLES', 'CoreVideo', 'QuartzCore'
+
+  # Rust standard library and system libraries needed by the static lib
+  s.libraries = 'c++', 'resolv'
+
+  # Declare the static library as a vendored library so Xcode knows to link it
+  # (The actual .a is built by the script_phase before compilation)
+  s.static_framework = true
 end
