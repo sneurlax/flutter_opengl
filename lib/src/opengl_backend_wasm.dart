@@ -113,8 +113,9 @@ class WasmBackend implements OpenGLBackend {
   int _height = 0;
   bool _running = false;
   int _animFrameId = 0;
+  int _surfaceGeneration = 0;
 
-  String get viewType => 'flutter_opengl_wasm_$hashCode';
+  String get viewType => 'flutter_opengl_wasm_${hashCode}_$_surfaceGeneration';
 
   static Future<void> ensureWasmLoaded() async {
     if (_wasmLoaded) return;
@@ -390,8 +391,13 @@ class WasmBackend implements OpenGLBackend {
   Future<int> createSurface(int width, int height) async {
     await ensureWasmLoaded();
 
+    // Clean up previous renderer if any.
+    _renderer?.free();
+    _renderer = null;
+
     _width = width;
     _height = height;
+    _surfaceGeneration++;
 
     final canvas = web.HTMLCanvasElement()
       ..width = width
@@ -404,7 +410,7 @@ class WasmBackend implements OpenGLBackend {
       (int viewId, {Object? params}) => canvas,
     );
 
-    // Create the WasmRenderer immediately — the constructor now accepts
+    // Create the WasmRenderer immediately — the constructor accepts
     // the canvas element directly, so it doesn't need to be in the DOM.
     _renderer = _WasmRenderer(canvas, _width.toJS, _height.toJS);
 
