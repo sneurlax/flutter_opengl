@@ -11,13 +11,9 @@
 
 #include <cstring>
 #include <iostream>
-#include <memory>
-#include <future>
-#include <chrono>
 
 #include "include/fl_my_texture_gl.h"
-#include "../src/ffi.h"
-#include "../src/common.h"
+#include "rust_bridge.h"
 
 
 G_DEFINE_TYPE(FlutterOpenglPlugin, flutter_opengl_plugin, g_object_get_type())
@@ -25,6 +21,7 @@ G_DEFINE_TYPE(FlutterOpenglPlugin, flutter_opengl_plugin, g_object_get_type())
 #define EGL_EGLEXT_PROTOTYPES
 
 static bool glew_initialized = false;
+static LinuxBridgeData bridge_data = {NULL, NULL, NULL, NULL};
 
 static bool ensure_glew_init() {
 	if (glew_initialized)
@@ -68,7 +65,7 @@ static void flutter_opengl_plugin_handle_method_call(
 		}
 		else
 		{
-				// Always clean up previous resources regardless of dimensions
+			// Always clean up previous resources regardless of dimensions
 			if (getRenderer() != nullptr)
 				stopThread();
 
@@ -86,6 +83,19 @@ static void flutter_opengl_plugin_handle_method_call(
 				if (error) g_error_free(error);
 				response = FL_METHOD_RESPONSE(fl_method_error_response_new(
 					"101", "Failed to create GL context", nullptr));
+				fl_method_call_respond(method_call, response, nullptr);
+				return;
+			}
+
+			// The context must be realized before it can be made current.
+			if (!gdk_gl_context_realize(self->context, &error)) {
+				std::cout << "Failed to realize GL context: "
+				          << (error ? error->message : "unknown") << std::endl;
+				if (error) g_error_free(error);
+				g_object_unref(self->context);
+				self->context = nullptr;
+				response = FL_METHOD_RESPONSE(fl_method_error_response_new(
+					"101", "Failed to realize GL context", nullptr));
 				fl_method_call_respond(method_call, response, nullptr);
 				return;
 			}
@@ -110,14 +120,15 @@ static void flutter_opengl_plugin_handle_method_call(
 			fl_texture_registrar_mark_texture_frame_available(self->texture_registrar, self->texture);
 			gdk_gl_context_clear_current();
 
-			ctx_f.context = self->context;
-			ctx_f.texture_name = self->texture_name;
-			ctx_f.texture_registrar = self->texture_registrar;
-			ctx_f.myTexture = self->myTexture;
-			ctx_f.texture = self->texture;
-			ctx_f.width = width;
-			ctx_f.height = height;
-			createRenderer(&ctx_f);
+			// Populate the bridge data for Rust callbacks
+			bridge_data.gdk_context = self->context;
+			bridge_data.texture_registrar = self->texture_registrar;
+			bridge_data.texture = self->texture;
+			bridge_data.my_texture = self->myTexture;
+
+			PlatformContext ctx = linux_create_platform_context(
+				&bridge_data, width, height, self->texture_name);
+			createRenderer(&ctx);
 
 			g_autoptr(FlValue) result =
 				fl_value_new_int(reinterpret_cast<int64_t>(self->texture));

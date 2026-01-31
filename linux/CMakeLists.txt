@@ -8,24 +8,46 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(PLUGIN_NAME "flutter_opengl_plugin")
 
-# Option to enable OpenCV support (off by default)
-option(WITH_OPENCV "Build with OpenCV support" OFF)
+# -----------------------------------------------------------------------
+# Build the Rust shared library via cargo
+# -----------------------------------------------------------------------
+set(RUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../rust")
+set(RUST_LIB_NAME "flutter_opengl_rust")
 
-# Core plugin sources
+# Determine Rust build profile and output directory
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+  set(RUST_PROFILE "release")
+  set(CARGO_BUILD_FLAGS --release)
+else()
+  set(RUST_PROFILE "debug")
+  set(CARGO_BUILD_FLAGS "")
+endif()
+
+set(RUST_LIB_DIR "${RUST_DIR}/target/${RUST_PROFILE}")
+set(RUST_LIB_PATH "${RUST_LIB_DIR}/lib${RUST_LIB_NAME}.so")
+
+add_custom_command(
+  OUTPUT ${RUST_LIB_PATH}
+  COMMAND cargo build ${CARGO_BUILD_FLAGS}
+  WORKING_DIRECTORY ${RUST_DIR}
+  COMMENT "Building Rust library (${RUST_PROFILE})"
+)
+add_custom_target(rust_lib ALL DEPENDS ${RUST_LIB_PATH})
+
+# Import the Rust shared library as a CMake target
+add_library(${RUST_LIB_NAME} SHARED IMPORTED)
+set_target_properties(${RUST_LIB_NAME} PROPERTIES
+  IMPORTED_LOCATION ${RUST_LIB_PATH}
+)
+add_dependencies(${RUST_LIB_NAME} rust_lib)
+
+# -----------------------------------------------------------------------
+# Plugin sources (no more C++ engine sources)
+# -----------------------------------------------------------------------
 set(PLUGIN_SOURCES
   flutter_opengl_plugin.cc
   fl_my_texture_gl.cc
-  ../src/common.h
-  ../src/ffi.cpp
-  ../src/Renderer.cpp
-  ../src/Shader.cpp
-  ../src/uniformQueue.cpp
-  ../src/Sampler2D.cpp
 )
-
-if(WITH_OPENCV)
-  list(APPEND PLUGIN_SOURCES ../src/opencv_capture.cpp)
-endif()
 
 add_library(${PLUGIN_NAME} SHARED ${PLUGIN_SOURCES})
 
@@ -40,13 +62,13 @@ target_include_directories(${PLUGIN_NAME} INTERFACE
 )
 target_include_directories(${PLUGIN_NAME} PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}/include"
-  "${CMAKE_CURRENT_SOURCE_DIR}/../src"
+  "${CMAKE_CURRENT_SOURCE_DIR}"
 )
 
 target_link_libraries(${PLUGIN_NAME} PRIVATE flutter)
 target_link_libraries(${PLUGIN_NAME} PRIVATE PkgConfig::GTK)
 
-# OpenGL + EGL (the EGL link was missing, causing "undefined reference to eglGetError")
+# OpenGL + EGL + GLEW (still needed for glGenTextures in the plugin)
 find_package(OpenGL REQUIRED COMPONENTS OpenGL EGL)
 target_link_libraries(${PLUGIN_NAME} PRIVATE
   OpenGL::OpenGL
@@ -54,15 +76,11 @@ target_link_libraries(${PLUGIN_NAME} PRIVATE
   GLEW
 )
 
-# Optional OpenCV support
-if(WITH_OPENCV)
-  find_package(OpenCV REQUIRED COMPONENTS core highgui)
-  include_directories(${OpenCV_INCLUDE_DIRS})
-  target_link_libraries(${PLUGIN_NAME} PRIVATE opencv_core opencv_highgui)
-  target_compile_definitions(${PLUGIN_NAME} PRIVATE WITH_OPENCV)
-  message(STATUS "OpenCV enabled: ${OpenCV_DIR}")
-endif()
+# Link against the Rust shared library
+target_link_libraries(${PLUGIN_NAME} PRIVATE ${RUST_LIB_NAME})
 
+# Bundle the Rust .so with the Flutter application
 set(flutter_opengl_bundled_libraries
-  ""
+  "${RUST_LIB_PATH}"
+  PARENT_SCOPE
 )
