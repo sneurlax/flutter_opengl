@@ -532,13 +532,8 @@ impl WasmRenderer {
     #[wasm_bindgen]
     pub fn remove_uniform(&mut self, name: &str) -> bool {
         let running = self.running;
-        // Create the glow context before borrowing self.shader mutably to
-        // avoid overlapping borrows of `self`.
-        let gl = self.create_glow_context();
         match self.shader.as_mut() {
-            Some(s) => {
-                s.uniforms_mut().remove_uniform(name, &gl, running)
-            }
+            Some(s) => s.remove_uniform(name, running),
             None => false,
         }
     }
@@ -560,23 +555,7 @@ impl WasmRenderer {
 
         let mut sampler = Sampler2D::new();
         sampler.add_rgba32(width, height, data);
-
-        let added = s.uniforms_mut().add_uniform(
-            name,
-            UniformType::Sampler2D,
-            &sampler as *const Sampler2D as *const std::os::raw::c_void,
-        );
-
-        if added {
-            // Generate the GL texture immediately. We need a separate glow
-            // context to avoid double-borrow through the Shader.
-            let gl = self.create_glow_context();
-            if let Some(ref mut s) = self.shader {
-                s.uniforms_mut().set_all_sampler2d(&gl);
-            }
-        }
-
-        added
+        s.add_and_upload_sampler2d(name, sampler)
     }
 
     #[wasm_bindgen]
@@ -587,28 +566,10 @@ impl WasmRenderer {
         height: i32,
         data: &[u8],
     ) -> bool {
-        let s = match self.shader.as_mut() {
-            Some(s) => s,
-            None => return false,
-        };
-
-        if !s.uniforms_mut().replace_sampler2d(name, width, height, data) {
-            return false;
+        match self.shader.as_mut() {
+            Some(s) => s.replace_and_upload_sampler2d(name, width, height, data),
+            None => false,
         }
-
-        // Re-upload the texture to GPU — replace_sampler2d only updates
-        // CPU data, and set_all_sampler2d skips already-assigned samplers.
-        let gl = self.create_glow_context();
-        if let Some(ref mut s) = self.shader {
-            if let Some(sampler) = s.uniforms_mut().get_sampler2d(name) {
-                let n = sampler.n_texture;
-                if n != -1 {
-                    sampler.gen_texture(&gl, n);
-                }
-            }
-        }
-
-        true
     }
 
     // -- Frame rendering --

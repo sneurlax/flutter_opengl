@@ -114,6 +114,53 @@ impl Shader {
         self.program
     }
 
+    /// Replace sampler2D data and re-upload the texture to the GPU using the
+    /// shader's own glow context. This avoids creating a separate glow context
+    /// which on WebGL2 would have a different slotmap, making texture keys
+    /// invalid.
+    pub fn replace_and_upload_sampler2d(
+        &mut self,
+        name: &str,
+        w: i32,
+        h: i32,
+        data: &[u8],
+    ) -> bool {
+        if !self.uniforms.replace_sampler2d(name, w, h, data) {
+            return false;
+        }
+        if let Some(sampler) = self.uniforms.get_sampler2d(name) {
+            let n = sampler.n_texture;
+            if n != -1 {
+                sampler.gen_texture(&self.gl, n);
+            }
+        }
+        true
+    }
+
+    /// Remove a uniform, deleting its GL texture (if sampler) using the
+    /// shader's own glow context.
+    pub fn remove_uniform(&mut self, name: &str, renderer_running: bool) -> bool {
+        self.uniforms.remove_uniform(name, &self.gl, renderer_running)
+    }
+
+    /// Add a sampler2D uniform and immediately generate its GL texture using
+    /// the shader's own glow context.
+    pub fn add_and_upload_sampler2d(
+        &mut self,
+        name: &str,
+        sampler: Sampler2D,
+    ) -> bool {
+        let added = self.uniforms.add_uniform(
+            name,
+            UniformType::Sampler2D,
+            &sampler as *const Sampler2D as *const std::os::raw::c_void,
+        );
+        if added {
+            self.uniforms.set_all_sampler2d(&self.gl);
+        }
+        added
+    }
+
     pub fn add_shader_toy_uniforms(&mut self) {
         let i_mouse = [0.0f32; 4];
         let i_resolution = [self.width as f32, self.height as f32, 0.0f32];
