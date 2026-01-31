@@ -21,10 +21,14 @@ import io.flutter.view.TextureRegistry;
 public class FlutterOpenglPlugin implements FlutterPlugin, MethodCallHandler {
     private static String TAG = FlutterOpenglPlugin.class.getSimpleName();
     static {
+        // Load the Rust shared library first (provides the FFI symbols),
+        // then the JNI bridge that links against it.
+        System.loadLibrary("flutter_opengl_rust");
         System.loadLibrary("flutter_opengl_plugin");
     }
 
     public static native void nativeSetSurface(Surface surface, int width, int height);
+    public static native void nativeDestroyRenderer();
 
     /// The MethodChannel that will the communication between Flutter and native Android
     ///
@@ -107,5 +111,10 @@ public class FlutterOpenglPlugin implements FlutterPlugin, MethodCallHandler {
     @Override
     public void onDetachedFromEngine(@NonNull FlutterPluginBinding binding) {
         channel.setMethodCallHandler(null);
+        try {
+            nativeDestroyRenderer();
+        } catch (Exception e) {
+            Log.e(TAG, "Error destroying renderer on detach", e);
+        }
     }
 }

@@ -31,6 +31,11 @@ android {
                 cppFlags "-std=c++17 -fexceptions -frtti"
             }
         }
+
+        // Only build for ABIs that we supply a Rust library for
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+        }
     }
 
     externalNativeBuild {
@@ -47,4 +52,70 @@ android {
             debuggable true
         }
     }
+}
+
+// -----------------------------------------------------------------------
+// Cargo NDK build task
+//
+// Builds the Rust shared library for all Android ABIs before CMake runs.
+// Requires:
+//   - Rust toolchain installed (rustup)
+//   - Android NDK targets: rustup target add aarch64-linux-android
+//         armv7-linux-androideabi i686-linux-android x86_64-linux-android
+//   - cargo-ndk: cargo install cargo-ndk
+// -----------------------------------------------------------------------
+
+def rustDir = file("${projectDir}/../rust")
+
+// Map of Android ABIs to Rust target triples
+def abiTargets = [
+    'arm64-v8a'   : 'aarch64-linux-android',
+    'armeabi-v7a' : 'armv7-linux-androideabi',
+    'x86'         : 'i686-linux-android',
+    'x86_64'      : 'x86_64-linux-android',
+]
+
+task cargoNdkBuild {
+    description = 'Build the Rust shared library for all Android ABIs using cargo-ndk'
+
+    // Input: all Rust source files
+    inputs.dir(file("${rustDir}/src"))
+    inputs.file(file("${rustDir}/Cargo.toml"))
+
+    // Output: the built .so files
+    abiTargets.each { abi, target ->
+        outputs.file(file("${rustDir}/target/${target}/release/libflutter_opengl_rust.so"))
+    }
+
+    doLast {
+        // Resolve the NDK directory from the Android SDK
+        def ndkDir = android.ndkDirectory
+        if (ndkDir == null) {
+            throw new GradleException("Android NDK not found. Set ndk.dir in local.properties or ANDROID_NDK_HOME.")
+        }
+
+        abiTargets.each { abi, target ->
+            exec {
+                workingDir rustDir
+                environment 'ANDROID_NDK_HOME', ndkDir.absolutePath
+                commandLine 'cargo', 'ndk',
+                    '--target', target,
+                    '--platform', '24',
+                    '--',
+                    'build', '--release'
+            }
+        }
+    }
+}
+
+// Ensure Rust library is built before CMake runs
+tasks.whenTaskAdded { task ->
+    if (task.name.contains('externalNativeBuild') || task.name.contains('ExternalNativeBuild')) {
+        task.dependsOn cargoNdkBuild
+    }
+}
+
+// Also hook into the main build
+tasks.matching { it.name == 'preBuild' }.configureEach {
+    it.dependsOn cargoNdkBuild
 }
