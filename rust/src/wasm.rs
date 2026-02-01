@@ -93,15 +93,12 @@ impl WasmRenderer {
 
         let gl = s.gl();
 
-        // Clean up old resources.
-        unsafe {
-            if let Some(vao) = self.vao.take() {
-                gl.delete_vertex_array(vao);
-            }
-            if let Some(vbo) = self.vbo.take() {
-                gl.delete_buffer(vbo);
-            }
-        }
+        // Discard old VAO/VBO handles — they belong to the previous shader's
+        // glow context (slotmap) which was already dropped, so the keys are
+        // invalid in the new context. The underlying WebGL resources will be
+        // garbage-collected by the browser.
+        self.vao = None;
+        self.vbo = None;
 
         unsafe {
             let vao = gl.create_vertex_array().unwrap();
