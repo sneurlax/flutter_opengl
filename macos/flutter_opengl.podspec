@@ -11,57 +11,36 @@ Pod::Spec.new do |s|
   s.platform = :osx, '10.15'
   s.osx.deployment_target = '10.15'
 
-  # Plugin Obj-C++ sources (no more shared C++ engine sources)
+  # Plugin Obj-C++ sources
   s.source_files = 'Classes/**/*.{h,mm,m}'
   s.public_header_files = 'Classes/FlutterOpenglPlugin.h'
+
+  # Keep the Rust source and build script accessible
+  s.preserve_paths = '../rust/**/*', 'build_rust.sh'
+
+  # Build the Rust static library before compiling the plugin
+  s.script_phase = {
+    :name => 'Build Rust Library',
+    :script => '"${PODS_TARGET_SRCROOT}/build_rust.sh"',
+    :execution_position => :before_compile,
+    :shell_path => '/bin/bash',
+  }
+
+  # The build script places the universal static library here.
+  rust_lib_dir = '${PODS_TARGET_SRCROOT}/../rust/target/macos-universal'
 
   s.pod_target_xcconfig = {
     'CLANG_CXX_LANGUAGE_STANDARD' => 'c++17',
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) GL_SILENCE_DEPRECATION=1',
-    'OTHER_LDFLAGS' => '$(inherited) -L${PODS_TARGET_SRCROOT}/../rust/target/release -lflutter_opengl_rust',
-    'LIBRARY_SEARCH_PATHS' => '$(inherited) "${PODS_TARGET_SRCROOT}/../rust/target/release" "${PODS_TARGET_SRCROOT}/../rust/target/debug"',
-    # Suppress warnings from legacy OpenGL deprecation
     'GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS' => 'NO',
-  }
-
-  # Build the Rust shared library before compiling the plugin
-  s.script_phase = {
-    :name => 'Build Rust Library',
-    :script => <<-SCRIPT
-      set -e
-      RUST_DIR="${PODS_TARGET_SRCROOT}/../rust"
-      if [ "${CONFIGURATION}" = "Release" ]; then
-        RUST_PROFILE="release"
-        CARGO_FLAGS="--release"
-      else
-        RUST_PROFILE="debug"
-        CARGO_FLAGS=""
-      fi
-
-      # Determine the Rust target triple for the current architecture
-      if [ "${ARCHS}" = "arm64" ]; then
-        RUST_TARGET="aarch64-apple-darwin"
-      else
-        RUST_TARGET="x86_64-apple-darwin"
-      fi
-
-      echo "Building Rust library for ${RUST_TARGET} (${RUST_PROFILE})..."
-      cd "${RUST_DIR}"
-      cargo build ${CARGO_FLAGS} --target "${RUST_TARGET}"
-
-      # Copy the dylib to the profile directory for linking
-      RUST_LIB_SRC="${RUST_DIR}/target/${RUST_TARGET}/${RUST_PROFILE}/libflutter_opengl_rust.dylib"
-      RUST_LIB_DST="${RUST_DIR}/target/${RUST_PROFILE}/libflutter_opengl_rust.dylib"
-      mkdir -p "${RUST_DIR}/target/${RUST_PROFILE}"
-      if [ -f "${RUST_LIB_SRC}" ]; then
-        cp -f "${RUST_LIB_SRC}" "${RUST_LIB_DST}"
-      fi
-    SCRIPT
-    ,
-    :execution_position => :before_compile,
-    :shell_path => '/bin/sh',
+    'LIBRARY_SEARCH_PATHS' => '$(inherited) "' + rust_lib_dir + '/$(CONFIGURATION)"',
+    # Pass the Rust .a as an additional input to libtool so its symbols
+    # are included in the pod's static framework archive
+    'OTHER_LIBTOOLFLAGS' => '"' + rust_lib_dir + '/$(CONFIGURATION)/libflutter_opengl_rust.a"',
   }
 
   s.dependency 'FlutterMacOS'
   s.frameworks = 'FlutterMacOS', 'OpenGL', 'CoreVideo'
+
+  s.static_framework = true
 end
