@@ -52,8 +52,16 @@ impl WasmRenderer {
     #[wasm_bindgen(constructor)]
     pub fn new(canvas: HtmlCanvasElement, width: u32, height: u32) -> Result<WasmRenderer, JsValue> {
 
+        // Create context with alpha:false so the canvas backbuffer is always
+        // opaque.  Many ShaderToy shaders only write fragColor.rgb and leave
+        // alpha uninitialised (0).  With the default premultipliedAlpha:true
+        // that makes the output fully transparent / black.
+        let options = js_sys::Object::new();
+        js_sys::Reflect::set(&options, &"alpha".into(), &false.into())?;
+        js_sys::Reflect::set(&options, &"premultipliedAlpha".into(), &false.into())?;
+
         let webgl2_ctx: WebGl2RenderingContext = canvas
-            .get_context("webgl2")?
+            .get_context_with_context_options("webgl2", &options)?
             .ok_or_else(|| JsValue::from_str("failed to get WebGL2 context"))?
             .dyn_into::<WebGl2RenderingContext>()
             .map_err(|_| JsValue::from_str("context is not WebGl2RenderingContext"))?;
@@ -624,6 +632,7 @@ impl WasmRenderer {
             s.gl().bind_vertex_array(Some(vao));
             s.gl().draw_arrays(glow::TRIANGLES, 0, 6);
             s.gl().bind_vertex_array(None);
+
             s.gl().flush();
         }
 
