@@ -256,18 +256,7 @@ impl Shader {
     }
 
     pub fn init_shader_toy(&mut self) -> String {
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            self.vertex_source =
-                "#version 330 core\n\
-                 in vec4 a_Position;\n\
-                 void main() {\n\
-                     gl_Position = a_Position;\n\
-                 }\n".to_string();
-        }
-
-        #[cfg(target_arch = "wasm32")]
-        {
+        if cfg!(any(target_os = "ios", target_os = "android", target_arch = "wasm32")) {
             self.vertex_source =
                 "#version 300 es\n\
                  precision highp float;\n\
@@ -275,51 +264,28 @@ impl Shader {
                  void main() {\n\
                      gl_Position = a_Position;\n\
                  }\n".to_string();
+        } else {
+            self.vertex_source =
+                "#version 330 core\n\
+                 in vec4 a_Position;\n\
+                 void main() {\n\
+                     gl_Position = a_Position;\n\
+                 }\n".to_string();
         }
-
-        let common =
-            "#define HW_PERFORMANCE 1\n\
-             uniform sampler2D iChannel0;\n\
-             uniform sampler2D iChannel1;\n\
-             uniform sampler2D iChannel2;\n\
-             uniform sampler2D iChannel3;\n\
-             uniform vec4 iMouse;\n\
-             uniform vec3 iResolution;\n\
-             uniform float iTime;\n";
-
-        #[cfg(target_arch = "wasm32")]
-        let common = {
-            let _ = common;
-            "#define HW_PERFORMANCE 0\n\
-             uniform sampler2D iChannel0;\n\
-             uniform sampler2D iChannel1;\n\
-             uniform sampler2D iChannel2;\n\
-             uniform sampler2D iChannel3;\n\
-             uniform vec4 iMouse;\n\
-             uniform vec3 iResolution;\n\
-             uniform float iTime;\n"
-        };
 
         let user_code = self.fragment_source.clone();
 
-        #[cfg(not(target_arch = "wasm32"))]
-        {
-            self.fragment_source = format!(
-                "#version 330 core\n\
-                 #extension GL_OES_standard_derivatives : enable\n\
-                 out vec4 fragColor;\n\
-                 {common}\
-                 {user_code}\n\
-                 void main() {{\n\
-                     mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n\
-                 }}\n",
-                common = common,
-                user_code = user_code,
-            );
-        }
+        if cfg!(any(target_os = "ios", target_os = "android", target_arch = "wasm32")) {
+            let common =
+                "#define HW_PERFORMANCE 0\n\
+                 uniform sampler2D iChannel0;\n\
+                 uniform sampler2D iChannel1;\n\
+                 uniform sampler2D iChannel2;\n\
+                 uniform sampler2D iChannel3;\n\
+                 uniform vec4 iMouse;\n\
+                 uniform vec3 iResolution;\n\
+                 uniform float iTime;\n";
 
-        #[cfg(target_arch = "wasm32")]
-        {
             self.fragment_source = format!(
                 "#version 300 es\n\
                  precision highp float;\n\
@@ -328,6 +294,29 @@ impl Shader {
                  {user_code}\n\
                  void main() {{\n\
                      mainImage(fragColor, gl_FragCoord.xy);\n\
+                 }}\n",
+                common = common,
+                user_code = user_code,
+            );
+        } else {
+            let common =
+                "#define HW_PERFORMANCE 1\n\
+                 uniform sampler2D iChannel0;\n\
+                 uniform sampler2D iChannel1;\n\
+                 uniform sampler2D iChannel2;\n\
+                 uniform sampler2D iChannel3;\n\
+                 uniform vec4 iMouse;\n\
+                 uniform vec3 iResolution;\n\
+                 uniform float iTime;\n";
+
+            self.fragment_source = format!(
+                "#version 330 core\n\
+                 #extension GL_OES_standard_derivatives : enable\n\
+                 out vec4 fragColor;\n\
+                 {common}\
+                 {user_code}\n\
+                 void main() {{\n\
+                     mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y-gl_FragCoord.y));\n\
                  }}\n",
                 common = common,
                 user_code = user_code,

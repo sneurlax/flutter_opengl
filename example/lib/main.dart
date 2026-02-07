@@ -85,12 +85,12 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	float a2=.8+iMouse.y/iResolution.y*2.;
 	mat2 rot1=mat2(cos(a1),sin(a1),-sin(a1),cos(a1));
 	mat2 rot2=mat2(cos(a2),sin(a2),-sin(a2),cos(a2));
-	dir.xz*=rot1;
-	dir.xy*=rot2;
+	dir.xz = dir.xz * rot1;
+	dir.xy = dir.xy * rot2;
 	vec3 from=vec3(1.,.5,0.5);
 	from+=vec3(time*2.,time,-2.);
-	from.xz*=rot1;
-	from.xy*=rot2;
+	from.xz = from.xz * rot1;
+	from.xy = from.xy * rot2;
 	
 	//volumetric rendering
 	float s=0.1,fade=1.;
@@ -98,7 +98,7 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
 	for (int r=0; r<volsteps; r++) {
 		vec3 p=from+s*dir*.5;
 		p = abs(vec3(tile)-mod(p,vec3(tile*2.))); // tiling fold
-		float pa,a=pa=0.;
+		float pa=0.,a=0.;
 		for (int i=0; i<iterations; i++) { 
 			p=abs(p)/dot(p,p)-formuparam; // the magic formula
 			a+=abs(length(p)-pa); // absolute sum of average change
