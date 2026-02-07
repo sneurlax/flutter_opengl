@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.platform = :ios, '12.0'
   s.ios.deployment_target = '12.0'
 
-  # Plugin Obj-C++ sources (no more C++ engine sources -- Rust handles rendering)
+  # Plugin Obj-C++ sources
   s.source_files = 'Classes/**/*.{h,mm,m}'
   s.public_header_files = 'Classes/FlutterOpenglPlugin.h'
 
@@ -26,26 +26,20 @@ Pod::Spec.new do |s|
     :shell_path => '/bin/bash',
   }
 
-  # Determine the Rust output directory based on build configuration
   # The build_rust.sh script places the universal library here.
   rust_lib_dir = '${PODS_TARGET_SRCROOT}/../rust/target/ios-universal'
 
   s.pod_target_xcconfig = {
     'GCC_PREPROCESSOR_DEFINITIONS' => '$(inherited) GL_SILENCE_DEPRECATION=1',
-    # Link against the Rust static library
-    'OTHER_LDFLAGS' => '$(inherited) -L"' + rust_lib_dir + '/$(CONFIGURATION)" -lflutter_opengl_rust',
-    'LIBRARY_SEARCH_PATHS' => '$(inherited) "' + rust_lib_dir + '/$(CONFIGURATION)"',
-    # Suppress deprecation warnings for OpenGL ES
     'GCC_WARN_ABOUT_DEPRECATED_FUNCTIONS' => 'NO',
+    'LIBRARY_SEARCH_PATHS' => '$(inherited) "' + rust_lib_dir + '/$(CONFIGURATION)"',
+    # Pass the Rust .a as an additional input to libtool so its symbols
+    # are included in the pod's static framework archive
+    'OTHER_LIBTOOLFLAGS' => '"' + rust_lib_dir + '/$(CONFIGURATION)/libflutter_opengl_rust.a"',
   }
 
   s.dependency 'Flutter'
   s.frameworks = 'OpenGLES', 'CoreVideo', 'QuartzCore'
 
-  # Rust standard library and system libraries needed by the static lib
-  s.libraries = 'c++', 'resolv'
-
-  # Declare the static library as a vendored library so Xcode knows to link it
-  # (The actual .a is built by the script_phase before compilation)
   s.static_framework = true
 end
