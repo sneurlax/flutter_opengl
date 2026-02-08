@@ -550,11 +550,9 @@ fn render_loop(shared: Arc<SharedState>) {
     let mut frames: u32 = 0;
     let mut frame_rate: f64 = 0.0;
     let mut start_fps = Instant::now();
-    let mut end_fps = Instant::now();
     let mut start_draw = Instant::now();
-    let mut end_draw;
-    // Cap at ~100 FPS (one frame every 10 ms).
-    let max_fps: f64 = 1.0 / 100.0;
+    // Cap at ~60 FPS (one frame every ~16 ms).
+    let max_fps: f64 = 1.0 / 60.0;
 
     // -- Main loop ----------------------------------------------------------
     while shared.loop_running.load(Ordering::SeqCst) {
@@ -682,38 +680,43 @@ fn render_loop(shared: Arc<SharedState>) {
                 // No message -- render a frame if the shader is continuous.
                 let s = match shader.as_mut() {
                     Some(s) if s.is_continuous() => s,
-                    _ => continue,
+                    _ => {
+                        // No continuous shader; sleep to avoid
+                        // burning CPU while waiting for messages.
+                        std::thread::sleep(std::time::Duration::from_millis(1));
+                        continue;
+                    }
                 };
 
-                // Frame-rate limiting.
-                end_draw = Instant::now();
-                let elapsed_draw = end_draw
-                    .duration_since(start_draw)
-                    .as_secs_f64();
-
-                if elapsed_draw >= max_fps {
-                    // Make GL context current once for the entire frame
-                    // (uniform ops + draw + readback).
-                    platform.make_current();
-
-                    // Apply any pending uniform operations from the FFI thread.
-                    {
-                        let mut ops =
-                            shared.pending_uniform_ops.lock().unwrap();
-                        if !ops.is_empty() {
-                            apply_uniform_ops(s, &mut ops, &loop_gl);
-                        }
+                // Frame-rate limiting: sleep until the next frame is due.
+                let elapsed_draw = start_draw.elapsed().as_secs_f64();
+                if elapsed_draw < max_fps {
+                    let remaining = max_fps - elapsed_draw;
+                    let sleep_ms = (remaining * 1000.0) as u64;
+                    if sleep_ms > 0 {
+                        std::thread::sleep(std::time::Duration::from_millis(sleep_ms));
                     }
-
-                    frames += 1;
-                    s.draw_frame_no_ctx(&platform);
-                    start_draw = Instant::now();
                 }
 
+                // Make GL context current once for the entire frame
+                // (uniform ops + draw + readback).
+                platform.make_current();
+
+                // Apply any pending uniform operations from the FFI thread.
+                {
+                    let mut ops =
+                        shared.pending_uniform_ops.lock().unwrap();
+                    if !ops.is_empty() {
+                        apply_uniform_ops(s, &mut ops, &loop_gl);
+                    }
+                }
+
+                frames += 1;
+                s.draw_frame_no_ctx(&platform);
+                start_draw = Instant::now();
+
                 // Update reported frame-rate roughly once per second.
-                end_fps = Instant::now();
-                let elapsed_fps =
-                    end_fps.duration_since(start_fps).as_secs_f64();
+                let elapsed_fps = start_fps.elapsed().as_secs_f64();
 
                 if elapsed_fps >= 1.0 {
                     frame_rate =

@@ -429,10 +429,15 @@ impl Shader {
                 self.gl.bind_vertex_array(None);
 
                 if self.platform_owns_texture {
+                    // Platform owns the texture (e.g. CVTextureCache).
+                    // Flush to ensure GPU commands are submitted, then
+                    // finish to block until the render is complete.
                     self.gl.flush();
                     self.gl.finish();
                 } else {
                     // Read pixels back to CPU buffer.
+                    // glReadPixels is synchronous: it waits for prior
+                    // draw calls to complete, so no glFlush/glFinish needed.
                     self.gl.bind_framebuffer(glow::READ_FRAMEBUFFER, self.fbo);
 
                     let buf = platform.get_pixel_buffer();
@@ -475,9 +480,6 @@ impl Shader {
                             self.gl.pixel_store_i32(glow::PACK_ROW_LENGTH, 0);
                         }
                     }
-
-                    self.gl.flush();
-                    self.gl.finish();
                 }
             }
 
