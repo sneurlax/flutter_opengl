@@ -102,6 +102,8 @@ pub struct SharedState {
     pub(crate) height: i32,
     pub(crate) texture_name: u32,
     pub(crate) uses_fbo: bool,
+    pub(crate) platform_owns_texture: bool,
+    pub(crate) bytes_per_row: i32,
 
     // The PlatformContext is moved to the render thread on start
     pub(crate) platform: Mutex<Option<PlatformContext>>,
@@ -121,6 +123,8 @@ impl Renderer {
         let h = platform.height;
         let tn = platform.texture_name;
         let fbo = platform.uses_fbo;
+        let pot = platform.platform_owns_texture;
+        let bpr = platform.bytes_per_row;
 
         Renderer {
             shared: Arc::new(SharedState {
@@ -144,6 +148,8 @@ impl Renderer {
                 height: h,
                 texture_name: tn,
                 uses_fbo: fbo,
+                platform_owns_texture: pot,
+                bytes_per_row: bpr,
                 platform: Mutex::new(Some(platform)),
             }),
         }
@@ -565,7 +571,11 @@ fn render_loop(shared: Arc<SharedState>) {
             }
 
             Some(Message::NewShader) => {
-                // Drop old shader (releases its GL resources and glow::Context).
+                // GL context must be current before dropping the old shader,
+                // because Drop deletes GL resources (program, FBO, VAO, VBO).
+                platform.make_current();
+
+                // Drop old shader (releases its GL resources).
                 shader = None;
 
                 let vert = shared.new_vertex_source.lock().unwrap().clone();
@@ -574,8 +584,6 @@ fn render_loop(shared: Arc<SharedState>) {
                     shared.new_is_continuous.load(Ordering::SeqCst);
                 let is_toy = shared.is_shader_toy.load(Ordering::SeqCst);
 
-                // GL context must be current to create the glow function table.
-                platform.make_current();
                 let gl = unsafe { create_gl_context(&platform) };
 
                 let mut s = Shader::new(
@@ -584,6 +592,8 @@ fn render_loop(shared: Arc<SharedState>) {
                     shared.height,
                     shared.texture_name,
                     shared.uses_fbo,
+                    shared.platform_owns_texture,
+                    shared.bytes_per_row,
                 );
                 s.set_shaders_text(vert, frag);
                 s.set_shaders_size(shared.width, shared.height);
@@ -675,19 +685,6 @@ fn render_loop(shared: Arc<SharedState>) {
                     _ => continue,
                 };
 
-                // Apply any pending uniform operations from the FFI thread.
-                // Some ops (AddSampler2D, ReplaceSampler2D, NewTexture) need
-                // an active GL context for texture uploads.
-                {
-                    let mut ops =
-                        shared.pending_uniform_ops.lock().unwrap();
-                    if !ops.is_empty() {
-                        platform.make_current();
-                        apply_uniform_ops(s, &mut ops, &loop_gl);
-                        platform.clear_context();
-                    }
-                }
-
                 // Frame-rate limiting.
                 end_draw = Instant::now();
                 let elapsed_draw = end_draw
@@ -695,8 +692,21 @@ fn render_loop(shared: Arc<SharedState>) {
                     .as_secs_f64();
 
                 if elapsed_draw >= max_fps {
+                    // Make GL context current once for the entire frame
+                    // (uniform ops + draw + readback).
+                    platform.make_current();
+
+                    // Apply any pending uniform operations from the FFI thread.
+                    {
+                        let mut ops =
+                            shared.pending_uniform_ops.lock().unwrap();
+                        if !ops.is_empty() {
+                            apply_uniform_ops(s, &mut ops, &loop_gl);
+                        }
+                    }
+
                     frames += 1;
-                    s.draw_frame(&platform);
+                    s.draw_frame_no_ctx(&platform);
                     start_draw = Instant::now();
                 }
 
@@ -717,8 +727,10 @@ fn render_loop(shared: Arc<SharedState>) {
     }
 
     // -- Cleanup ------------------------------------------------------------
-    // Drop shader (releases its glow::Context and GL resources).
+    // GL context must be current for Drop to delete GL resources.
+    platform.make_current();
     drop(shader);
+    platform.clear_context();
 
     // Return the platform context so the caller can reuse or drop it.
     *shared.platform.lock().unwrap() = Some(platform);

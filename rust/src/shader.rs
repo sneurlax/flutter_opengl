@@ -33,10 +33,12 @@ pub struct Shader {
     compile_error: String,
     texture_name: u32,
     uses_fbo: bool,
+    platform_owns_texture: bool,
+    bytes_per_row: i32,
 }
 
 impl Shader {
-    pub fn new(gl: glow::Context, width: i32, height: i32, texture_name: u32, uses_fbo: bool) -> Self {
+    pub fn new(gl: glow::Context, width: i32, height: i32, texture_name: u32, uses_fbo: bool, platform_owns_texture: bool, bytes_per_row: i32) -> Self {
         Self {
             gl,
             program: None,
@@ -53,6 +55,8 @@ impl Shader {
             compile_error: String::new(),
             texture_name,
             uses_fbo,
+            platform_owns_texture,
+            bytes_per_row,
         }
     }
 
@@ -220,17 +224,21 @@ impl Shader {
                     let native_tex = glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap());
                     self.gl.bind_texture(glow::TEXTURE_2D, Some(native_tex));
                     self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
-                    self.gl.tex_image_2d(
-                        glow::TEXTURE_2D,
-                        0,
-                        glow::RGBA as i32,
-                        self.width,
-                        self.height,
-                        0,
-                        glow::RGBA,
-                        glow::UNSIGNED_BYTE,
-                        glow::PixelUnpackData::Slice(None),
-                    );
+                    // Only allocate texture storage if the platform doesn't own
+                    // it (e.g. iOS CVTextureCache provides pre-allocated storage).
+                    if !self.platform_owns_texture {
+                        self.gl.tex_image_2d(
+                            glow::TEXTURE_2D,
+                            0,
+                            glow::RGBA as i32,
+                            self.width,
+                            self.height,
+                            0,
+                            glow::RGBA,
+                            glow::UNSIGNED_BYTE,
+                            glow::PixelUnpackData::Slice(None),
+                        );
+                    }
 
                     let fbo = self.gl.create_framebuffer().unwrap();
                     self.gl.bind_framebuffer(glow::DRAW_FRAMEBUFFER, Some(fbo));
@@ -293,7 +301,7 @@ impl Shader {
                  {common}\
                  {user_code}\n\
                  void main() {{\n\
-                     mainImage(fragColor, gl_FragCoord.xy);\n\
+                     mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y));\n\
                  }}\n",
                 common = common,
                 user_code = user_code,
@@ -376,14 +384,21 @@ impl Shader {
         }
     }
 
+    /// Draw a frame, making the GL context current first.
     #[cfg(not(target_arch = "wasm32"))]
     pub fn draw_frame(&mut self, platform: &PlatformContext) {
+        platform.make_current();
+        self.draw_frame_no_ctx(platform);
+    }
+
+    /// Draw a frame assuming the GL context is already current.
+    /// The caller is responsible for calling `platform.make_current()` first.
+    #[cfg(not(target_arch = "wasm32"))]
+    pub fn draw_frame_no_ctx(&mut self, platform: &PlatformContext) {
         let program = match self.program {
             Some(p) => p,
             None => return,
         };
-
-        platform.make_current();
 
         let time = match self.start_instant {
             Some(instant) => instant.elapsed().as_secs_f32(),
@@ -413,25 +428,57 @@ impl Shader {
                 self.gl.draw_arrays(glow::TRIANGLES, 0, 6);
                 self.gl.bind_vertex_array(None);
 
-                self.gl.bind_framebuffer(glow::READ_FRAMEBUFFER, self.fbo);
+                if self.platform_owns_texture {
+                    self.gl.flush();
+                    self.gl.finish();
+                } else {
+                    // Read pixels back to CPU buffer.
+                    self.gl.bind_framebuffer(glow::READ_FRAMEBUFFER, self.fbo);
 
-                let buf = platform.get_pixel_buffer();
-                if !buf.is_null() {
-                    self.gl.read_pixels(
-                        0,
-                        0,
-                        self.width,
-                        self.height,
-                        glow::RGBA,
-                        glow::UNSIGNED_BYTE,
-                        glow::PixelPackData::Slice(
-                            Some(std::slice::from_raw_parts_mut(buf, (self.width * self.height * 4) as usize)),
-                        ),
-                    );
+                    let buf = platform.get_pixel_buffer();
+                    if !buf.is_null() {
+                        // If the pixel buffer has row padding (e.g. IOSurface),
+                        // set GL_PACK_ROW_LENGTH so glReadPixels writes with
+                        // the correct stride.
+                        let row_pixels = if self.bytes_per_row > 0 {
+                            self.bytes_per_row / 4
+                        } else {
+                            self.width
+                        };
+                        if row_pixels != self.width {
+                            self.gl.pixel_store_i32(glow::PACK_ROW_LENGTH, row_pixels);
+                        }
+
+                        let buf_size = (row_pixels * self.height * 4) as usize;
+                        let slice = std::slice::from_raw_parts_mut(buf, buf_size);
+
+                        // iOS/Android support GL_BGRA_EXT for glReadPixels
+                        // (GL_EXT_read_format_bgra).  Reading BGRA directly
+                        // into the CVPixelBuffer avoids a CPU channel-swizzle.
+                        let pixel_format = if cfg!(any(target_os = "ios", target_os = "android")) {
+                            glow::BGRA
+                        } else {
+                            glow::RGBA
+                        };
+                        self.gl.read_pixels(
+                            0,
+                            0,
+                            self.width,
+                            self.height,
+                            pixel_format,
+                            glow::UNSIGNED_BYTE,
+                            glow::PixelPackData::Slice(Some(slice)),
+                        );
+
+                        // Reset to default tight packing.
+                        if row_pixels != self.width {
+                            self.gl.pixel_store_i32(glow::PACK_ROW_LENGTH, 0);
+                        }
+                    }
+
+                    self.gl.flush();
+                    self.gl.finish();
                 }
-
-                self.gl.flush();
-                self.gl.finish();
             }
 
             platform.clear_context();
@@ -441,6 +488,26 @@ impl Shader {
                 self.gl.draw_arrays(glow::TRIANGLES, 0, 6);
             }
             platform.swap_buffers();
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+impl Drop for Shader {
+    fn drop(&mut self) {
+        unsafe {
+            if let Some(prog) = self.program.take() {
+                self.gl.delete_program(prog);
+            }
+            if let Some(fbo) = self.fbo.take() {
+                self.gl.delete_framebuffer(fbo);
+            }
+            if let Some(vao) = self.vao.take() {
+                self.gl.delete_vertex_array(vao);
+            }
+            if let Some(vbo) = self.vbo.take() {
+                self.gl.delete_buffer(vbo);
+            }
         }
     }
 }

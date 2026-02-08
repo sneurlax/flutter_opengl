@@ -216,7 +216,7 @@ impl WasmRenderer {
         self.shader = None;
 
         let gl = self.create_glow_context();
-        let mut s = Shader::new(gl, self.width, self.height, 0, false);
+        let mut s = Shader::new(gl, self.width, self.height, 0, false, false, 0);
         s.set_shaders_text(vertex_src.to_string(), fragment_src.to_string());
         s.set_shaders_size(self.width, self.height);
         s.set_is_continuous(is_continuous);
@@ -243,7 +243,7 @@ impl WasmRenderer {
         self.shader = None;
 
         let gl = self.create_glow_context();
-        let mut s = Shader::new(gl, self.width, self.height, 0, false);
+        let mut s = Shader::new(gl, self.width, self.height, 0, false, false, 0);
         s.set_shaders_text(String::new(), fragment_src.to_string());
         s.set_shaders_size(self.width, self.height);
         s.set_is_continuous(true);

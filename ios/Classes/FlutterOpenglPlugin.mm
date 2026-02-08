@@ -97,7 +97,7 @@ static IOSBridgeData g_bridge_data;
 
     // Create the PlatformContext and pass it to the Rust renderer
     PlatformContext platformCtx = ios_create_platform_context(
-        &g_bridge_data, width, height, _textureName);
+        &g_bridge_data, width, height, _textureName, _myTexture.bytesPerRow);
     createRenderer(&platformCtx);
 
     result(@(_flutterTextureId));

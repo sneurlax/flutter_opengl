@@ -25,6 +25,13 @@ pub struct PlatformContext {
     pub texture_name: u32,
     /// Whether this platform uses FBO + glReadPixels (true) or direct swap (false).
     pub uses_fbo: bool,
+    /// Whether the platform owns the texture storage (e.g. iOS CVTextureCache).
+    /// When true, `init_shader` must NOT call `tex_image_2d` to reallocate storage.
+    pub platform_owns_texture: bool,
+    /// Bytes per row of the pixel buffer.  On iOS, IOSurface-backed CVPixelBuffers
+    /// may have padding beyond `width * 4`.  Used to set GL_PACK_ROW_LENGTH so
+    /// `glReadPixels` writes with the correct stride.  Set to 0 for tight packing.
+    pub bytes_per_row: i32,
 }
 
 unsafe impl Send for PlatformContext {}

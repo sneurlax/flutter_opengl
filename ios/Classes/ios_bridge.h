@@ -45,6 +45,15 @@ typedef struct {
     /* Whether this platform uses FBO + glReadPixels (1) or direct swap (0).
      * Stored as uint8_t to match Rust bool in repr(C). */
     uint8_t  uses_fbo;
+
+    /* Whether the platform owns the texture storage (e.g. iOS CVTextureCache).
+     * When 1, the Rust engine skips tex_image_2d and glReadPixels. */
+    uint8_t  platform_owns_texture;
+
+    /* Bytes per row of the pixel buffer.  IOSurface-backed CVPixelBuffers
+     * may have row padding beyond width*4.  Rust uses this for
+     * GL_PACK_ROW_LENGTH.  Set to 0 for tight (width*4) packing. */
+    int32_t  bytes_per_row;
 } PlatformContext;
 
 /* -----------------------------------------------------------------------
@@ -181,7 +190,8 @@ static inline PlatformContext ios_create_platform_context(
         IOSBridgeData *bridge_data,
         int32_t width,
         int32_t height,
-        uint32_t texture_name) {
+        uint32_t texture_name,
+        int32_t bytes_per_row) {
     PlatformContext ctx;
 
     ctx.make_current        = ios_make_current;
@@ -194,7 +204,9 @@ static inline PlatformContext ios_create_platform_context(
     ctx.width               = width;
     ctx.height              = height;
     ctx.texture_name        = texture_name;
-    ctx.uses_fbo            = 1;     /* iOS uses FBO + glReadPixels */
+    ctx.uses_fbo            = 1;     /* iOS uses FBO rendering */
+    ctx.platform_owns_texture = 0;   /* Using FBO + glReadPixels path */
+    ctx.bytes_per_row       = bytes_per_row;
 
     return ctx;
 }

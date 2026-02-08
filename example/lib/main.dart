@@ -133,8 +133,6 @@ void mainImage( out vec4 fragColor, in vec2 fragCoord )
               if (snapshot.hasError || !snapshot.hasData) {
                 return const SizedBox.shrink();
               }
-              /// When the texture id is got, it will be possible
-              /// to start renderer, set a shader and display it
 
               /// Start renderer thread
               OpenGLController().openglFFI.startThread();

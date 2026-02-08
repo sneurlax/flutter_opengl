@@ -43,6 +43,13 @@ typedef struct {
     /* Whether this platform uses FBO + glReadPixels (1) or direct swap (0).
      * Stored as uint8_t to match Rust bool in repr(C). */
     uint8_t  uses_fbo;
+
+    /* Whether the platform owns the texture storage (e.g. iOS CVTextureCache).
+     * When 1, the Rust engine skips tex_image_2d and glReadPixels. */
+    uint8_t  platform_owns_texture;
+
+    /* Bytes per row of the pixel buffer (0 = tight packing at width*4). */
+    int32_t  bytes_per_row;
 } PlatformContext;
 
 /* -----------------------------------------------------------------------
@@ -190,6 +197,8 @@ static inline PlatformContext macos_create_platform_context(
     ctx.height              = height;
     ctx.texture_name        = texture_name;
     ctx.uses_fbo            = 1;     /* macOS uses FBO + glReadPixels */
+    ctx.platform_owns_texture = 0;
+    ctx.bytes_per_row       = 0;
 
     return ctx;
 }
