@@ -82,9 +82,9 @@ task cargoNdkBuild {
     inputs.dir(file("${rustDir}/src"))
     inputs.file(file("${rustDir}/Cargo.toml"))
 
-    // Output: the built .so files
+    // Output: the built .a files (linked statically into the plugin .so)
     abiTargets.each { abi, target ->
-        outputs.file(file("${rustDir}/target/${target}/release/libflutter_opengl_rust.so"))
+        outputs.file(file("${rustDir}/target/${target}/release/libflutter_opengl_rust.a"))
     }
 
     doLast {

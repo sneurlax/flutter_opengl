@@ -21,9 +21,7 @@ import io.flutter.view.TextureRegistry;
 public class FlutterOpenglPlugin implements FlutterPlugin, MethodCallHandler {
     private static String TAG = FlutterOpenglPlugin.class.getSimpleName();
     static {
-        // Load the Rust shared library first (provides the FFI symbols),
-        // then the JNI bridge that links against it.
-        System.loadLibrary("flutter_opengl_rust");
+        // Rust is statically linked into the plugin .so — load only the plugin.
         System.loadLibrary("flutter_opengl_plugin");
     }
 

@@ -9,11 +9,12 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(PLUGIN_NAME "flutter_opengl_plugin")
 
 # -----------------------------------------------------------------------
-# Rust shared library (pre-built by Gradle cargoNdkBuild task)
+# Rust static library (pre-built by Gradle cargoNdkBuild task)
 #
-# The Rust .so for each ABI is placed under:
-#   ../rust/target/<abi>/release/libflutter_opengl_rust.so
+# The Rust .a for each ABI is placed under:
+#   ../rust/target/<triple>/release/libflutter_opengl_rust.a
 # by the cargo-ndk invocation in build.gradle.
+# Linking statically avoids shipping a second .so and the RPATH issue.
 # -----------------------------------------------------------------------
 set(RUST_LIB_NAME "flutter_opengl_rust")
 set(RUST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../rust")
@@ -32,10 +33,10 @@ else()
 endif()
 
 set(RUST_LIB_DIR "${RUST_DIR}/target/${RUST_TARGET}/release")
-set(RUST_LIB_PATH "${RUST_LIB_DIR}/lib${RUST_LIB_NAME}.so")
+set(RUST_LIB_PATH "${RUST_LIB_DIR}/lib${RUST_LIB_NAME}.a")
 
-# Import the pre-built Rust shared library
-add_library(${RUST_LIB_NAME} SHARED IMPORTED)
+# Import the pre-built Rust static library
+add_library(${RUST_LIB_NAME} STATIC IMPORTED)
 set_target_properties(${RUST_LIB_NAME} PROPERTIES
     IMPORTED_LOCATION ${RUST_LIB_PATH}
 )
