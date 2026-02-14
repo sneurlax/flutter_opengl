@@ -144,7 +144,17 @@ The plugin uses a WebGL2 rendering backend. Your target browser must support **W
 
 ## Android
 
-No additional setup is required for a basic build. OpenCV is optional. To build with OpenCV support, run `SCRIPTS/setupOpenCV-android.sh` or manually download OpenCV from https://github.com/opencv/opencv/releases and copy the libs and include folders into `android/src/opencv`.
+The plugin uses a Rust native library. The following tools must be installed before building:
+
+```bash
+# Rust cross-compilation targets for Android ABIs
+rustup target add aarch64-linux-android armv7-linux-androideabi i686-linux-android x86_64-linux-android
+
+# cargo-ndk (drives the NDK cross-compiler)
+cargo install cargo-ndk
+```
+
+OpenCV is optional. To build with OpenCV support, run `SCRIPTS/setupOpenCV-android.sh` or manually download OpenCV from https://github.com/opencv/opencv/releases and copy the libs and include folders into `android/src/opencv`.
 
 # Known Limitations
 - OpenCV video capture is only available on Android, Linux, and Windows (not supported on Web, iOS, or macOS)
