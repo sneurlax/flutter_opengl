@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_opengl_example/main.dart';
+import 'package:glow_example/main.dart';
 
 void main() {
   testWidgets('MyApp can be constructed and pumped', (WidgetTester tester) async {

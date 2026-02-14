@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:glow/glow.dart';
 import 'package:image/image.dart' as img;
 
 import 'shadertoy.dart';

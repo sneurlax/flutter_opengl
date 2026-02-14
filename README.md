@@ -1,6 +1,6 @@
-# flutter_opengl
+# glow
 
-A Flutter OpenGL ES plugin using a Texture() widget. Supports Android, iOS, Linux, macOS, Windows, and Web. Many shaders from ShaderToy.com can be copy/pasted.
+Flutter plugin providing GPU shader rendering via a Texture widget. Uses a Rust engine with [glow](https://crates.io/crates/glow) for cross-platform GL (OpenGL, GL ES, WebGL2). Supports Android, iOS, Linux, macOS, Windows, and Web. Many shaders from ShaderToy.com can be copy/pasted.
 
 ## Getting Started
 
@@ -8,9 +8,9 @@ A Flutter OpenGL ES plugin using a Texture() widget. Supports Android, iOS, Linu
 | ---- | ---- | ---- | ---- | ---- | ---- |
 | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-![gif](https://github.com/alnitak/flutter_opengl/blob/master/images/flutter_opengl.gif?raw=true "Flutter OpenGL Demo")
-![gif](https://github.com/alnitak/flutter_opengl/blob/master/images/flutter_OpenGL-video.gif?raw=true "Flutter OpenGL Demo")
-![gif](https://github.com/alnitak/flutter_opengl/blob/master/images/flutter_OpenGL-textures.gif?raw=true "Flutter OpenGL Demo")
+![gif](https://github.com/ManyMath/glow_dart/blob/master/images/flutter_opengl.gif?raw=true "Glow Demo")
+![gif](https://github.com/ManyMath/glow_dart/blob/master/images/flutter_OpenGL-video.gif?raw=true "Glow Demo")
+![gif](https://github.com/ManyMath/glow_dart/blob/master/images/flutter_OpenGL-textures.gif?raw=true "Glow Demo")
 
 The main workflow of the plugin is:
 
@@ -160,4 +160,4 @@ OpenCV is optional. To build with OpenCV support, run `SCRIPTS/setupOpenCV-andro
 - OpenCV video capture is only available on Android, Linux, and Windows (not supported on Web, iOS, or macOS)
 - OpenGL is deprecated by Apple on macOS and iOS in favor of Metal; the plugin suppresses deprecation warnings but future OS updates may affect compatibility
 - Only single-layer ShaderToy shaders (Image tab) are supported; multi-pass shaders with buffers are not yet implemented
-- On Android, OpenGL ES 2.0 is used; some shaders requiring ES 3.0 features may not work
+- On Android, some shaders requiring advanced ES 3.0 features may not work on all devices

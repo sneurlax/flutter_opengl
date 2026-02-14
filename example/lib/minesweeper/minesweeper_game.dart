@@ -1,6 +1,6 @@
 import 'dart:collection';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:glow/glow.dart';
 
 enum MinesweeperState { ready, playing, won, lost }
 

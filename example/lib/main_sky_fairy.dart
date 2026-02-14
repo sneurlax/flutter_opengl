@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:glow/glow.dart';
 
 import 'game_menu/game_menu.dart';
 

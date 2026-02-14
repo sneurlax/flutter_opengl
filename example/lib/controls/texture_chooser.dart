@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:glow/glow.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:star_menu/star_menu.dart';
 

@@ -1,5 +1,5 @@
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:glow/glow.dart';
 
 enum MemoryState { reveal, playing, mismatchWait, levelComplete, gameOver }
 

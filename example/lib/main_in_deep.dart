@@ -1,9 +1,9 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
-import 'package:flutter_opengl_example/controls/controls.dart';
-import 'package:flutter_opengl_example/edit_shader.dart';
+import 'package:glow/glow.dart';
+import 'package:glow_example/controls/controls.dart';
+import 'package:glow_example/edit_shader.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';

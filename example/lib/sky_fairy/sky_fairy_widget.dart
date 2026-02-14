@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_opengl/flutter_opengl.dart';
+import 'package:glow/glow.dart';
 
 import 'sky_fairy_game.dart';
 import 'sky_fairy_shader.dart';

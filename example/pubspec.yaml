@@ -1,5 +1,5 @@
-name: flutter_opengl_example
-description: Demonstrates how to use the flutter_opengl plugin.
+name: glow_example
+description: Demonstrates how to use the glow plugin.
 publish_to: 'none'
 
 environment:
@@ -9,7 +9,7 @@ dependencies:
   flutter:
     sdk: flutter
 
-  flutter_opengl:
+  glow:
     path: ../
 
   cupertino_icons: ^1.0.2
