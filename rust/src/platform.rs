@@ -1,4 +1,4 @@
-use std::os::raw::c_void;
+use std::os::raw::{c_char, c_void};
 
 /// Platform-specific GL callbacks, filled in by each platform plugin.
 #[repr(C)]
@@ -15,7 +15,7 @@ pub struct PlatformContext {
     /// Swap buffers (Android EGL). Null on FBO-based platforms.
     pub swap_buffers: Option<unsafe extern "C" fn(user_data: *mut c_void) -> bool>,
     /// Load a GL function pointer by name. Called once during glow::Context creation.
-    pub load_gl_proc: Option<unsafe extern "C" fn(name: *const i8) -> *const c_void>,
+    pub load_gl_proc: Option<unsafe extern "C" fn(name: *const c_char) -> *const c_void>,
     /// Opaque pointer passed back to every callback.
     pub user_data: *mut c_void,
     /// Texture dimensions.

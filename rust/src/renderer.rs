@@ -516,7 +516,7 @@ unsafe fn create_gl_context(platform: &PlatformContext) -> glow::Context {
     match platform.load_gl_proc {
         Some(loader) => glow::Context::from_loader_function(|name| {
             let cname = std::ffi::CString::new(name).unwrap();
-            loader(cname.as_ptr()) as *const _
+            loader(cname.as_ptr() as *const _) as *const _
         }),
         None => panic!("No GL loader function provided in PlatformContext"),
     }
