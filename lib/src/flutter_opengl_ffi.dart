@@ -22,9 +22,7 @@ class FlutterOpenGLFfi {
           lookup)
       : _lookup = lookup;
 
-  /// ***********************************************
-  /// **** GET RENDERER STATUS
-  /// Returns true if the texture has been created successfully
+  /// Returns true if the texture has been created.
   bool rendererStatus() {
     return _rendererStatus() == 0 ? false : true;
   }
@@ -33,10 +31,7 @@ class FlutterOpenGLFfi {
       _lookup<ffi.NativeFunction<ffi.Int Function()>>('rendererStatus');
   late final _rendererStatus = _rendererStatusPtr.asFunction<int Function()>();
 
-  /// ***********************************************
-  /// **** GET TEXTURE SIZE
-  /// Get the size of the current texture.
-  /// If not set it returns Size(-1, -1)
+  /// Get the texture size, or Size(-1, -1) if not set.
   Size getTextureSize() {
     ffi.Pointer<ffi.Int32> w = calloc(ffi.sizeOf<ffi.Int32>());
     ffi.Pointer<ffi.Int32> h = calloc(ffi.sizeOf<ffi.Int32>());
@@ -56,9 +51,7 @@ class FlutterOpenGLFfi {
   late final _textureSize = _textureSizePtr.asFunction<
       int Function(ffi.Pointer<ffi.Int32>, ffi.Pointer<ffi.Int32>)>();
 
-  /// ***********************************************
-  /// **** START THREAD
-  /// Starts the drawing thread loop. It does nothing it's already running
+  /// Start the drawing thread loop. No-op if already running.
   void startThread() {
     return _startThread();
   }
@@ -67,9 +60,7 @@ class FlutterOpenGLFfi {
       _lookup<ffi.NativeFunction<ffi.Void Function()>>('startThread');
   late final _startThread = _startThreadPtr.asFunction<void Function()>();
 
-  /// ***********************************************
-  /// **** STOP THREAD
-  /// Delete shader, delete texture and stops the drawing thread loop
+  /// Stop the drawing thread, delete shader and texture.
   void stopThread() {
     return _stopThread();
   }
@@ -78,15 +69,9 @@ class FlutterOpenGLFfi {
       _lookup<ffi.NativeFunction<ffi.Void Function()>>('stopThread');
   late final _stopThread = _stopThreadPtr.asFunction<void Function()>();
 
-  /// ***********************************************
-  /// **** SET SHADER
-  /// Set the shader to be used in the current texture.
+  /// Set the shader for the current texture.
   ///
-  /// [isContinuous] not used yet
-  /// [vertexShader] String of the vertex shader source
-  /// [fragmentShader] String of the fragment shader source
-  ///
-  /// returns the compiling shader error string or an empty string if no errors.
+  /// Returns the compile error string, or empty on success.
   String setShader(
     bool isContinuous,
     String vertexShader,
@@ -109,18 +94,9 @@ class FlutterOpenGLFfi {
       ffi.Pointer<ffi.Char> Function(
           int, ffi.Pointer<ffi.Char>, ffi.Pointer<ffi.Char>)>();
 
-  /// ***********************************************
-  /// **** SET SHADERTOY SHADER
-  /// Set the shader to be used in the current texture.
-  /// These are only fragment shaders taken from ShaderToy.com
-  /// Many of the shaders can be copy/pasted, but they must have
-  /// only the "image" layer (ie no buffer).
-  /// Also many of them could be heavy for mobile devices (few FPS).
-  /// The uniforms actually available and automatically registered are:
-  /// float iTime
-  /// vec4 iMouse
-  /// vec3 iResolution
-  /// Sampler2D iChannel[0-3]
+  /// Set a ShaderToy fragment shader (image layer only).
+  ///
+  /// Automatically registers iTime, iMouse, iResolution, iChannel[0-3].
   String setShaderToy(String fragmentShader) {
     return _setShaderToy(
       fragmentShader.toNativeUtf8().cast<ffi.Char>(),
@@ -134,9 +110,7 @@ class FlutterOpenGLFfi {
   late final _setShaderToy = _setShaderToyPtr
       .asFunction<ffi.Pointer<ffi.Char> Function(ffi.Pointer<ffi.Char>)>();
 
-  /// ***********************************************
-  /// **** GET VERTEX SHADER
-  /// Get current vertex shader text
+  /// Get current vertex shader source.
   String getVertexShader() {
     ffi.Pointer<ffi.Char> vs = _getVertexShader();
     return vs.cast<Utf8>().toDartString();
@@ -148,9 +122,7 @@ class FlutterOpenGLFfi {
   late final _getVertexShader =
       _getVertexShaderPtr.asFunction<ffi.Pointer<ffi.Char> Function()>();
 
-  /// ***********************************************
-  /// **** GET FRAGMENT SHADER
-  /// Get current fragment shader text
+  /// Get current fragment shader source.
   String getFragmentShader() {
     ffi.Pointer<ffi.Char> fs = _getFragmentShader();
     return fs.cast<Utf8>().toDartString();
@@ -162,14 +134,8 @@ class FlutterOpenGLFfi {
   late final _getFragmentShader =
       _getFragmentShaderPtr.asFunction<ffi.Pointer<ffi.Char> Function()>();
 
-  /// ***********************************************
-  /// **** ADD SHADERTORY UNIFORMS
-  /// this will add
-  /// vec4 iMouse
-  /// vec3 iResolution
-  /// float iTime
-  /// Sampler2D iChannel[0-3]
-  /// These are automatically set when using [setShaderToy]
+  /// Register ShaderToy uniforms (iTime, iMouse, iResolution, iChannel[0-3]).
+  /// Set automatically when using [setShaderToy].
   void addShaderToyUniforms() {
     return _addShaderToyUniforms();
   }
@@ -179,21 +145,12 @@ class FlutterOpenGLFfi {
   late final _addShaderToyUniforms =
       _addShaderToyUniformsPtr.asFunction<void Function()>();
 
-  /// ***********************************************
-  /// **** SET MOUSE POS
-  /// Set the iMouse uniform
-  /// Shows how to use the mouse input (only left button supported):
+  /// Set the iMouse uniform. Automatically processed by [OpenGLTexture].
   ///
   ///      mouse.xy  = mouse position during last button down
   ///  abs(mouse.zw) = mouse position during last button click
-  /// sign(mouze.z)  = button is down
-  /// sign(mouze.w)  = button is clicked
-  ///
-  /// This is automatically processed by [OpenGLTexture] widget
-  ///
-  /// For reference:
-  /// https://www.shadertoy.com/view/llySRh
-  /// https://www.shadertoy.com/view/Mss3zH
+  /// sign(mouse.z)  = button is down
+  /// sign(mouse.w)  = button is clicked
   void setMousePosition(
     Offset startingPos,
     Offset pos,
@@ -220,10 +177,7 @@ class FlutterOpenGLFfi {
   late final _setMousePosition = _setMousePositionPtr.asFunction<
       void Function(double, double, double, double, double, double)>();
 
-  /// ***********************************************
-  /// **** GET FPS
-  /// Get current FPS (the algorithm seems correct, but what we see, is not!
-  /// See Renderer::loop() )
+  /// Get current FPS.
   double getFps() {
     return _getFps();
   }
@@ -232,8 +186,7 @@ class FlutterOpenGLFfi {
       _lookup<ffi.NativeFunction<ffi.Double Function()>>('getFPS');
   late final _getFps = _getFpsPtr.asFunction<double Function()>();
 
-  /// ***********************************************
-  /// **** SET CLEAR COLOR (not used yet)
+  /// Set clear color (not used yet).
   void setClearColor(
     int clearR,
     int clearG,
@@ -255,12 +208,9 @@ class FlutterOpenGLFfi {
   late final _nativeSurfaceSetClearColor = _nativeSurfaceSetClearColorPtr
       .asFunction<void Function(int, int, int, int)>();
 
-  /// ***********************************************
-  /// ***********************************************
-  /// ***********************************************
-  /// ***********************************************
-  /// **** ADD UNIFORMs
-  /// * add BOOL
+  // -- Add uniforms --
+
+  /// Add a bool uniform.
   bool addBoolUniform(String name, bool val) {
     ffi.Pointer<ffi.Bool> valT = calloc(ffi.sizeOf<ffi.Bool>());
     valT.value = val;
@@ -429,8 +379,7 @@ class FlutterOpenGLFfi {
   late final _addUniform = _addUniformPtr.asFunction<
       int Function(ffi.Pointer<ffi.Char>, int, ffi.Pointer<ffi.Void>)>();
 
-  /// ***********************************************
-  /// **** REMOVE UNIFORM
+  /// Remove a uniform by name.
   bool removeUniform(String name) {
     int ret = _removeUniform(
       name.toNativeUtf8().cast<ffi.Char>(),
@@ -444,10 +393,7 @@ class FlutterOpenGLFfi {
   late final _removeUniform =
       _removeUniformPtr.asFunction<int Function(ffi.Pointer<ffi.Char>)>();
 
-  /// ***********************************************
-  /// **** ADD SAMPLER2D UNIFORM
-  ///
-  /// * Add a Sampler2D uniform. The raw image stored in *val* must be in RGBA32 format.
+  /// Add a Sampler2D uniform. [val] must be RGBA32.
   bool addSampler2DUniform(
     String name,
     int width,
@@ -481,10 +427,7 @@ class FlutterOpenGLFfi {
   late final _addSampler2DUniform = _addSampler2DUniformPtr.asFunction<
       int Function(ffi.Pointer<ffi.Char>, int, int, ffi.Pointer<ffi.Void>)>();
 
-  /// ***********************************************
-  /// **** REPLACE SAMPLER2D UNIFORM
-  ///
-  /// * replace Sampler2D uniform texture with another one with different size
+  /// Replace a Sampler2D uniform texture (may differ in size).
   bool replaceSampler2DUniform(
     String name,
     int width,
@@ -518,9 +461,9 @@ class FlutterOpenGLFfi {
   late final _replaceSampler2DUniform = _replaceSampler2DUniformPtr.asFunction<
       int Function(ffi.Pointer<ffi.Char>, int, int, ffi.Pointer<ffi.Void>)>();
 
-  /// ***********************************************
-  /// **** SET UNIFORMs
-  /// * set BOOL
+  // -- Set uniforms --
+
+  /// Set a bool uniform.
   bool setBoolUniform(String name, bool val) {
     ffi.Pointer<ffi.Bool> valT = calloc(ffi.sizeOf<ffi.Bool>());
     valT.value = val;
