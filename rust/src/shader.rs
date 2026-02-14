@@ -198,8 +198,9 @@ impl Shader {
             #[cfg(target_arch = "wasm32")]
             { self.start_instant = Some(()); }
 
+            // GL ES 3.0 requires a bound VAO.
             #[cfg(not(target_arch = "wasm32"))]
-            if self.uses_fbo {
+            {
                 let vao = unsafe { self.gl.create_vertex_array().unwrap() };
                 let vbo = unsafe { self.gl.create_buffer().unwrap() };
 
@@ -220,41 +221,45 @@ impl Shader {
                     self.gl.enable_vertex_attrib_array(0);
 
                     self.gl.bind_vertex_array(None);
-
-                    let native_tex = glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap());
-                    self.gl.bind_texture(glow::TEXTURE_2D, Some(native_tex));
-                    self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
-                    // Only allocate texture storage if the platform doesn't own
-                    // it (e.g. iOS CVTextureCache provides pre-allocated storage).
-                    if !self.platform_owns_texture {
-                        self.gl.tex_image_2d(
-                            glow::TEXTURE_2D,
-                            0,
-                            glow::RGBA as i32,
-                            self.width,
-                            self.height,
-                            0,
-                            glow::RGBA,
-                            glow::UNSIGNED_BYTE,
-                            glow::PixelUnpackData::Slice(None),
-                        );
-                    }
-
-                    let fbo = self.gl.create_framebuffer().unwrap();
-                    self.gl.bind_framebuffer(glow::DRAW_FRAMEBUFFER, Some(fbo));
-                    self.gl.framebuffer_texture_2d(
-                        glow::DRAW_FRAMEBUFFER,
-                        glow::COLOR_ATTACHMENT0,
-                        glow::TEXTURE_2D,
-                        Some(glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap())),
-                        0,
-                    );
-
-                    self.fbo = Some(fbo);
                 }
 
                 self.vao = Some(vao);
                 self.vbo = Some(vbo);
+
+                if self.uses_fbo {
+                    unsafe {
+                        let native_tex = glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap());
+                        self.gl.bind_texture(glow::TEXTURE_2D, Some(native_tex));
+                        self.gl.tex_parameter_i32(glow::TEXTURE_2D, glow::TEXTURE_MIN_FILTER, glow::LINEAR as i32);
+                        // Only allocate texture storage if the platform doesn't own
+                        // it (e.g. iOS CVTextureCache provides pre-allocated storage).
+                        if !self.platform_owns_texture {
+                            self.gl.tex_image_2d(
+                                glow::TEXTURE_2D,
+                                0,
+                                glow::RGBA as i32,
+                                self.width,
+                                self.height,
+                                0,
+                                glow::RGBA,
+                                glow::UNSIGNED_BYTE,
+                                glow::PixelUnpackData::Slice(None),
+                            );
+                        }
+
+                        let fbo = self.gl.create_framebuffer().unwrap();
+                        self.gl.bind_framebuffer(glow::DRAW_FRAMEBUFFER, Some(fbo));
+                        self.gl.framebuffer_texture_2d(
+                            glow::DRAW_FRAMEBUFFER,
+                            glow::COLOR_ATTACHMENT0,
+                            glow::TEXTURE_2D,
+                            Some(glow::NativeTexture(std::num::NonZeroU32::new(self.texture_name).unwrap())),
+                            0,
+                        );
+
+                        self.fbo = Some(fbo);
+                    }
+                }
             }
 
             self.uniforms.set_all_sampler2d(&self.gl);
@@ -294,6 +299,12 @@ impl Shader {
                  uniform vec3 iResolution;\n\
                  uniform float iTime;\n";
 
+            // Android doesn't need Y-flip (Impeller preserves GL's Y-up from SurfaceTexture).
+            let frag_coord = if cfg!(target_os = "android") {
+                "gl_FragCoord.xy"
+            } else {
+                "vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y)"
+            };
             self.fragment_source = format!(
                 "#version 300 es\n\
                  precision highp float;\n\
@@ -301,10 +312,11 @@ impl Shader {
                  {common}\
                  {user_code}\n\
                  void main() {{\n\
-                     mainImage(fragColor, vec2(gl_FragCoord.x, iResolution.y - gl_FragCoord.y));\n\
+                     mainImage(fragColor, {frag_coord});\n\
                  }}\n",
                 common = common,
                 user_code = user_code,
+                frag_coord = frag_coord,
             );
         } else {
             let common =
@@ -487,7 +499,11 @@ impl Shader {
             platform.mark_frame_available();
         } else {
             unsafe {
+                self.gl.bind_framebuffer(glow::FRAMEBUFFER, None);
+                self.gl.viewport(0, 0, self.width, self.height);
+                self.gl.bind_vertex_array(self.vao);
                 self.gl.draw_arrays(glow::TRIANGLES, 0, 6);
+                self.gl.bind_vertex_array(None);
             }
             platform.swap_buffers();
         }

@@ -77,8 +77,9 @@ extern "C" void JNI_FUNC(nativeSetSurface)(JNIEnv *jenv,
     PlatformContext ctx = android_create_platform_context(
         &g_bridge_data, width, height);
     createRenderer(&ctx);
+    startThread();
 
-    LOGD("nativeSetSurface: renderer created");
+    LOGD("nativeSetSurface: renderer created and render thread started");
 }
 
 /* -----------------------------------------------------------------------
